@@ -1,2 +1,2 @@
-# MCTS
-Monte carlo tree search implementation.
+# reasoner
+GDL reasoner
