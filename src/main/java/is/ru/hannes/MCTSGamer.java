@@ -35,8 +35,9 @@ public final class MCTSGamer extends StateMachineGamer {
         return null;
     }
 
-    public void expand(MCTSNode node) {
-        List<Move> moves = getStateMachine().getLegalMoves();
+    public void expand(MCTSNode node) throws MoveDefinitionException 
+    {
+        List<Move> moves = getStateMachine().getLegalMoves(getCurrentState(), getRole());
     }
 
     @Override
