@@ -9,7 +9,6 @@ import org.ggp.base.player.gamer.event.GamerSelectedMoveEvent;
 import org.ggp.base.player.gamer.exception.GamePreviewException;
 import org.ggp.base.player.gamer.statemachine.StateMachineGamer;
 import org.ggp.base.util.game.Game;
-import org.ggp.base.util.statemachine.Move;
 import org.ggp.base.util.statemachine.StateMachine;
 import org.ggp.base.util.statemachine.cache.CachedStateMachine;
 import org.ggp.base.util.statemachine.exceptions.GoalDefinitionException;
@@ -18,18 +17,28 @@ import org.ggp.base.util.statemachine.exceptions.TransitionDefinitionException;
 import org.ggp.base.util.statemachine.implementation.prover.ProverStateMachine;
 import is.ru.hannes.CustomPropNetStateMachine;
 import is.ru.hannes.CustomMachineState;
+import is.ru.cadia.ggp.propnet.bitsetstate.RecursiveForwardChangePropNetStateMachine;
+import is.ru.cadia.ggp.propnet.structure.GGPBasePropNetStructureFactory;
+
+import java.util.HashMap;
+
+import org.ggp.base.util.statemachine.Move;
+import org.ggp.base.util.statemachine.Role;
 
 public final class MCTSGamer extends StateMachineGamer {
 
     MCTSNode root;
+    MCTSNode currentNode;
 
-
-    public MCTSGamer() {
+    public MCTSGamer() 
+    {
        super();
-       root = new MCTSNode();
+       root = new MCTSNode(getStateMachine(), getStateMachine().getInitialState());
+       currentNode = root;
     }
 
-    public MCTSNode selection() {
+    public MCTSNode selection() 
+    {
         // TODO: sort the leafs of the tree according to some comparator (heuristic)
 
         return null;
@@ -41,23 +50,26 @@ public final class MCTSGamer extends StateMachineGamer {
     }
 
     @Override
-    public String getName() {
+    public String getName() 
+    {
         return "MCTSGamer";
     }
 
     @Override
-    public Move stateMachineSelectMove(long timeout) throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException {
+    public Move stateMachineSelectMove(long timeout) throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException 
+    {
         return null;
     }
 
     @Override
-    public StateMachine getInitialStateMachine() {
-        //return new CachedStateMachine(new ProverStateMachine());
-        return new CustomPropNetStateMachine();
+    public StateMachine getInitialStateMachine() 
+    {
+        return new RecursiveForwardChangePropNetStateMachine(new GGPBasePropNetStructureFactory());
     }
 
     @Override
-    public void preview(Game g, long timeout) throws GamePreviewException {
+    public void preview(Game g, long timeout) throws GamePreviewException 
+    {
         // Random gamer does no game previewing.
     }
 
@@ -68,12 +80,14 @@ public final class MCTSGamer extends StateMachineGamer {
     }
 
     @Override
-    public void stateMachineStop() {
+    public void stateMachineStop() 
+    {
         // Random gamer does no special cleanup when the match ends normally.
     }
 
     @Override
-    public void stateMachineAbort() {
+    public void stateMachineAbort() 
+    {
         // Random gamer does no special cleanup when the match ends abruptly.
     }
 
