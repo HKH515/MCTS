@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="org.ggp.base.util.gdl.scrambler.GdlRendererTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2019-05-09T18:30:28" hostname="thinkingpad" time="1.853">
+  <properties/>
+  <testcase name="testSimpleRendering" classname="org.ggp.base.util.gdl.scrambler.GdlRendererTest" time="1.853"/>
+  <system-out><![CDATA[Updating the game cache...
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

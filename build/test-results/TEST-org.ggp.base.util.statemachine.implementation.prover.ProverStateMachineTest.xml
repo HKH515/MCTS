@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="org.ggp.base.util.statemachine.implementation.prover.ProverStateMachineTest" tests="9" skipped="0" failures="0" errors="0" timestamp="2019-05-09T18:30:48" hostname="thinkingpad" time="0.04">
+  <properties/>
+  <testcase name="testDistinctAtBeginningOfRule" classname="org.ggp.base.util.statemachine.implementation.prover.ProverStateMachineTest" time="0.002"/>
+  <testcase name="testProverOnTicTacToe" classname="org.ggp.base.util.statemachine.implementation.prover.ProverStateMachineTest" time="0.014"/>
+  <testcase name="testCase1A" classname="org.ggp.base.util.statemachine.implementation.prover.ProverStateMachineTest" time="0.001"/>
+  <testcase name="testCase3C" classname="org.ggp.base.util.statemachine.implementation.prover.ProverStateMachineTest" time="0.002"/>
+  <testcase name="testCase5A" classname="org.ggp.base.util.statemachine.implementation.prover.ProverStateMachineTest" time="0.002"/>
+  <testcase name="testCase5B" classname="org.ggp.base.util.statemachine.implementation.prover.ProverStateMachineTest" time="0.001"/>
+  <testcase name="testCase5C" classname="org.ggp.base.util.statemachine.implementation.prover.ProverStateMachineTest" time="0.009"/>
+  <testcase name="testCase5D" classname="org.ggp.base.util.statemachine.implementation.prover.ProverStateMachineTest" time="0.003"/>
+  <testcase name="testCase5E" classname="org.ggp.base.util.statemachine.implementation.prover.ProverStateMachineTest" time="0.003"/>
+  <system-out><![CDATA[[( reduce a 1 ), ( reduce c 1 ), ( reduce a 0 ), ( reduce c 0 ), ( reduce c 2 ), ( reduce c 3 ), ( reduce c 4 )]
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

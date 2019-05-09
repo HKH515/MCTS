@@ -9,18 +9,27 @@ import java.util.Objects;
 public class RoleMovePair
 {
     private Role role;
-    private List<Move> moves;
+    private Move move;
 
     public RoleMovePair(Role role, List<Move> moves)
     {
         this.role = role;
-        this.moves = new ArrayList<>(moves);
+        this.move = move;
+    }
+
+    public Role getRole()
+    {
+        return this.role;
+    }
+    public Move getMove()
+    {
+        return this.move;
     }
 
     @Override
     public int hashCode()
     {
-        return Objects.hash(role, moves);
+        return Objects.hash(role, move);
     }
     
 }

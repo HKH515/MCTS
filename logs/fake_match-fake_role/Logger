@@ -62,3 +62,11 @@ LOG 1557245366186 [L3]: Started logging to files at: Tue May 07 16:09:26 GMT 201
 LOG 1557245366186 [L3]: Game rules: [( role fake_role )]
 LOG 1557245366186 [L3]: Start clock: 0
 LOG 1557245366187 [L3]: Play clock: 0
+LOG 1557426648270 [L3]: Started logging to files at: Thu May 09 18:30:48 GMT 2019
+LOG 1557426648271 [L3]: Game rules: [( role fake_role )]
+LOG 1557426648271 [L3]: Start clock: 0
+LOG 1557426648271 [L3]: Play clock: 0
+LOG 1557426648389 [L3]: Started logging to files at: Thu May 09 18:30:48 GMT 2019
+LOG 1557426648389 [L3]: Game rules: [( role fake_role )]
+LOG 1557426648389 [L3]: Start clock: 0
+LOG 1557426648389 [L3]: Play clock: 0

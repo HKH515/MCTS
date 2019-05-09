@@ -30,24 +30,6 @@ public final class MCTSGamer extends StateMachineGamer {
     MCTSNode root;
     MCTSNode currentNode;
 
-    public MCTSGamer() 
-    {
-       super();
-       root = new MCTSNode(getStateMachine(), getStateMachine().getInitialState());
-       currentNode = root;
-    }
-
-    public MCTSNode selection() 
-    {
-        // TODO: sort the leafs of the tree according to some comparator (heuristic)
-
-        return null;
-    }
-
-    public void expand(MCTSNode node) throws MoveDefinitionException 
-    {
-        List<Move> moves = getStateMachine().getLegalMoves(getCurrentState(), getRole());
-    }
 
     @Override
     public String getName() 
@@ -58,6 +40,16 @@ public final class MCTSGamer extends StateMachineGamer {
     @Override
     public Move stateMachineSelectMove(long timeout) throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException 
     {
+        long start = System.currentTimeMillis();
+        //System.out.println(getStateMachine());
+        root = new MCTSNode(getInitialStateMachine(), getCurrentState(), null, null);
+        currentNode = root;
+
+        while (System.currentTimeMillis() - start < (timeout - 200))
+        {
+            runMCTS();
+        }
+
         return null;
     }
 
@@ -65,12 +57,25 @@ public final class MCTSGamer extends StateMachineGamer {
     public StateMachine getInitialStateMachine() 
     {
         return new RecursiveForwardChangePropNetStateMachine(new GGPBasePropNetStructureFactory());
+        //return new CustomPropNetStateMachine();
     }
 
     @Override
     public void preview(Game g, long timeout) throws GamePreviewException 
     {
         // Random gamer does no game previewing.
+    }
+
+    public void runMCTS() throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException
+    {
+        MCTSNode selectedNode = root.selection();
+        MCTSNode child = selectedNode.expand();
+        if (child == null)
+        {
+            return;
+        }
+        List<Integer> playout = child.playout();
+        child.backprop(playout);
     }
 
     @Override
@@ -94,5 +99,11 @@ public final class MCTSGamer extends StateMachineGamer {
     @Override
     public DetailPanel getDetailPanel() {
         return new SimpleDetailPanel();
+    }
+
+    public static void main(String[] args) throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException
+    {
+        MCTSGamer gamer = new MCTSGamer();
+        Move move = gamer.stateMachineSelectMove(1000);
     }
 }

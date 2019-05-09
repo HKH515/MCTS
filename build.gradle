@@ -179,7 +179,7 @@ task gameServerRunner(type: JavaExec) {
 }
 
 task custom(type: JavaExec) {
-    main = 'is.ru.hannes.CustomPropNetStateMachine'
+    main = 'is.ru.hannes.MCTSGamer'
     classpath = sourceSets.main.runtimeClasspath
     jvmArgs = playerJvmArgs
 }

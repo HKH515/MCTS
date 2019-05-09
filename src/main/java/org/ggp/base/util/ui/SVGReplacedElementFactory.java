@@ -73,8 +73,8 @@ public class SVGReplacedElementFactory implements ReplacedElementFactory {
 
         TranscodingHints transcoderHints = new TranscodingHints();
         transcoderHints.put(ImageTranscoder.KEY_XML_PARSER_VALIDATING, Boolean.FALSE);
-        transcoderHints.put(ImageTranscoder.KEY_DOM_IMPLEMENTATION,
-                SVGDOMImplementation.getDOMImplementation());
+        //transcoderHints.put(ImageTranscoder.KEY_DOM_IMPLEMENTATION,
+        //        SVGDOMImplementation.getDOMImplementation());
         transcoderHints.put(ImageTranscoder.KEY_DOCUMENT_ELEMENT_NAMESPACE_URI,
                 SVGConstants.SVG_NAMESPACE_URI);
         transcoderHints.put(ImageTranscoder.KEY_DOCUMENT_ELEMENT, "svg");
