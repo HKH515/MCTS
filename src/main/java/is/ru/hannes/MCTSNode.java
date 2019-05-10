@@ -1,7 +1,13 @@
 package is.ru.hannes;
 
+import java.io.File;
 import java.util.*;
 
+import is.ru.cadia.ggp.propnet.bitsetstate.RecursiveForwardChangePropNetStateMachine;
+import is.ru.cadia.ggp.propnet.statemachine.PropNetStateMachine;
+import is.ru.cadia.ggp.propnet.structure.GGPBasePropNetStructureFactory;
+import is.ru.cadia.ggp.utils.IOUtils;
+import org.ggp.base.util.game.Game;
 import org.ggp.base.util.statemachine.MachineState;
 
 import org.ggp.base.util.statemachine.Move;
@@ -39,6 +45,7 @@ public class MCTSNode
         N = 0;
         roleMovePairToQ = new HashMap<>();
         roleMovePairToN = new HashMap<>();
+
         //unexpandedJointMoves = machine.getLegalJointMoves(state);
         unexpandedJointMoves = null;
 
@@ -58,8 +65,10 @@ public class MCTSNode
     {
         List<Move> argmax = null;
         Integer qMax = Integer.MIN_VALUE;
+        System.out.println("printing all RMP");
         for (RoleMovePair rmp : roleMovePairToQ.keySet())
         {
+            System.out.println(rmp);
             if (rmp.getRole().equals(role))
             {
                 if (roleMovePairToQ.get(rmp) > qMax)
@@ -118,6 +127,7 @@ public class MCTSNode
         this.unexpandedJointMoves.remove(randomJointMove);
 
         MCTSNode child = getChild(randomJointMove);
+        child.initMapsForMove(randomJointMove);
         return child;
     }
 
@@ -137,7 +147,6 @@ public class MCTSNode
 
     public void backprop(List<Integer> playoutGoals)
     {
-
         for (RoleMovePair rmp : roleMovePairToQ.keySet())
         {
             // update(corresponding player's playout score, RoleMovePair for that player)
@@ -148,10 +157,6 @@ public class MCTSNode
         {
             return;
         }
-
-        // make sure that the map entries exist in parent before recursing
-        this.parent.initMapsForMove(this.prevAction);
-
 
         this.parent.backprop(playoutGoals);
     }
@@ -217,5 +222,23 @@ public class MCTSNode
 
         // N(s,r,a)
         roleMovePairToN.put(rmp, currentRoleMoveN + 1);
+    }
+
+    public static void main(String[] args) throws Exception
+    {
+        // setting up the state machine
+        String gdlFileName = "/home/hannes/Documents/reasoner/games/games/ticTacToe/ticTacToe.kif";
+        String gameDescription = IOUtils.readFile(new File(gdlFileName));
+        String preprocessedRules = Game.preprocessRulesheet(gameDescription);
+        Game ggpBaseGame = Game.createEphemeralGame(preprocessedRules);
+        PropNetStateMachine stateMachine = new RecursiveForwardChangePropNetStateMachine(new GGPBasePropNetStructureFactory()); // insert your own machine here
+        stateMachine.initialize(ggpBaseGame.getRules());
+
+        //MCTSNode root = new MCTSNode();
+
+
+
+
+
     }
 }
