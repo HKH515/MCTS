@@ -42,7 +42,7 @@ public final class MCTSGamer extends StateMachineGamer {
     {
         long start = System.currentTimeMillis();
         //System.out.println(getStateMachine());
-        root = new MCTSNode(getInitialStateMachine(), getCurrentState(), null, null);
+        root = new MCTSNode(getStateMachine(), getCurrentState(), null, null);
         currentNode = root;
 
         while (System.currentTimeMillis() - start < (timeout - 200))
@@ -57,7 +57,6 @@ public final class MCTSGamer extends StateMachineGamer {
     public StateMachine getInitialStateMachine() 
     {
         return new RecursiveForwardChangePropNetStateMachine(new GGPBasePropNetStructureFactory());
-        //return new CustomPropNetStateMachine();
     }
 
     @Override

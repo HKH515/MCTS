@@ -37,7 +37,8 @@ public class MCTSNode
         children = new LinkedList<MCTSNode>();
         roleMovePairToQ = new HashMap<>();
         roleMovePairToN = new HashMap<>();
-        unexpandedJointMoves = machine.getLegalJointMoves(state);
+        //unexpandedJointMoves = machine.getLegalJointMoves(state);
+        unexpandedJointMoves = null;
     }
 
     private void addChild(MCTSNode node) throws TransitionDefinitionException, MoveDefinitionException
@@ -70,6 +71,10 @@ public class MCTSNode
 
     public MCTSNode selection() throws TransitionDefinitionException, MoveDefinitionException
     {
+        if (this.unexpandedJointMoves == null)
+        {
+            this.unexpandedJointMoves = machine.getLegalJointMoves(state);         
+        }
         // If we've reached a leaf
         if (!this.unexpandedJointMoves.isEmpty())
         {
@@ -127,7 +132,8 @@ public class MCTSNode
     public MCTSNode getRandomChild()
     {
         Random rand = new Random();
-        return this.children.get(rand.nextInt(this.children.size()));
+        System.out.println("Children size: " + children.size());
+        return children.get(rand.nextInt(children.size()));
     }
 
     public void update(Integer playout, RoleMovePair rmp)
