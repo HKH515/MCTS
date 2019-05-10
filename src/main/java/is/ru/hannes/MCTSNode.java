@@ -65,11 +65,12 @@ public class MCTSNode
     {
         List<Move> argmax = null;
         Integer qMax = Integer.MIN_VALUE;
-        System.out.println("printing all RMP");
+        //System.out.println("printing all RMP");
 
         for (RoleMovePair rmp : roleMovePairToQ.keySet())
         {
-            System.out.println(rmp);
+            //System.out.println(rmp);
+            //System.out.println(roleMovePairToQ.get(rmp));
             if (rmp.getRole().equals(role))
             {
                 if (roleMovePairToQ.get(rmp) > qMax)

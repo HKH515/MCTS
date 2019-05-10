@@ -29,6 +29,7 @@ public final class MCTSGamer extends StateMachineGamer {
 
     MCTSNode root;
     MCTSNode currentNode;
+    int i = 0;
 
 
     @Override
@@ -49,7 +50,7 @@ public final class MCTSGamer extends StateMachineGamer {
         {
             runMCTS();
             Move bestActionForRole = root.getBestActionForRole(getRole());
-            System.out.println("current best is " + bestActionForRole);
+            //System.out.println("current best is " + bestActionForRole);
         }
 
         Move bestActionForRole = root.getBestActionForRole(getRole());
@@ -74,6 +75,18 @@ public final class MCTSGamer extends StateMachineGamer {
         MCTSNode selectedNode = root.selection();
         List<Integer> playout = selectedNode.playout();
         selectedNode.parent.backprop(playout);
+        if (i % 1000 == 0)
+        {
+            System.out.println("");
+        }
+        for (RoleMovePair rmp : root.roleMovePairToQ.keySet())
+        {
+            if (i % 1000 == 0)
+            {
+                System.out.println("action/Q for root: " + rmp.getMove() + ", " + root.roleMovePairToQ.get(rmp));
+            }
+        }
+        i++;
     }
 
     @Override
