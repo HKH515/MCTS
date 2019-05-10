@@ -50,7 +50,9 @@ public final class MCTSGamer extends StateMachineGamer {
             runMCTS();
         }
 
-        return null;
+        Move bestActionForRole = root.getBestActionForRole(getRole());
+
+        return bestActionForRole;
     }
 
     @Override
@@ -68,13 +70,8 @@ public final class MCTSGamer extends StateMachineGamer {
     public void runMCTS() throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException
     {
         MCTSNode selectedNode = root.selection();
-        MCTSNode child = selectedNode.expand();
-        if (child == null)
-        {
-            return;
-        }
-        List<Integer> playout = child.playout();
-        child.backprop(playout);
+        List<Integer> playout = selectedNode.playout();
+        selectedNode.backprop(playout);
     }
 
     @Override

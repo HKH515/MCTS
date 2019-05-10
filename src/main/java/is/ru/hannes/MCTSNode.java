@@ -15,26 +15,28 @@ import org.ggp.base.util.statemachine.exceptions.TransitionDefinitionException;
 public class MCTSNode 
 {
     List<MCTSNode> children;
+    HashMap<List<Move>, MCTSNode> jointMovesToChildren;
 
     int N;
 
     HashMap<RoleMovePair, Integer> roleMovePairToQ;
     HashMap<RoleMovePair, Integer> roleMovePairToN;
-    List<List<Move>> unexpandedJointMoves;
+    Set<List<Move>> unexpandedJointMoves;
 
     MachineState state;
     StateMachine machine;
     MCTSNode parent;
     List<Move> prevAction;
-    
+
     public MCTSNode(StateMachine machine, MachineState state, MCTSNode parent, List<Move> prevAction) throws MoveDefinitionException
     {
         this.machine = machine;
         this.state = state;
         this.parent = parent;
         this.prevAction = prevAction;
+        this.children = new LinkedList<>();
+        this.jointMovesToChildren = new HashMap<>();
         N = 0;
-        children = new LinkedList<MCTSNode>();
         roleMovePairToQ = new HashMap<>();
         roleMovePairToN = new HashMap<>();
         //unexpandedJointMoves = machine.getLegalJointMoves(state);
@@ -71,17 +73,29 @@ public class MCTSNode
 
     public MCTSNode selection() throws TransitionDefinitionException, MoveDefinitionException
     {
-        if (this.unexpandedJointMoves == null)
-        {
-            this.unexpandedJointMoves = machine.getLegalJointMoves(state);         
-        }
-        // If we've reached a leaf
-        if (!this.unexpandedJointMoves.isEmpty())
+
+        if (this.machine.isTerminal(this.state))
         {
             return this;
         }
 
-        return getRandomChild().selection();
+        // if current node is unexpanded
+        if (this.unexpandedJointMoves == null)
+        {
+            this.unexpandedJointMoves = new HashSet<>(this.machine.getLegalJointMoves(this.state));
+        }
+
+        List<Move> randomAction = getRandomJointAction();
+        if (this.unexpandedJointMoves.contains(randomAction))
+        {
+            MCTSNode child = expand(randomAction);
+            return child;
+        }
+        else
+        {
+            MCTSNode child = this.getChild(randomAction);
+            return child;
+        }
     }
 
     /*
@@ -89,29 +103,35 @@ public class MCTSNode
     * that results from doing that move from the current state.
     * Returns the newly created child node.
      */
-    public MCTSNode expand() throws MoveDefinitionException, TransitionDefinitionException
+    public MCTSNode expand(List<Move> randomJointMove) throws MoveDefinitionException, TransitionDefinitionException
     {
         if (this.machine.isTerminal(this.state))
         {
             return null;
         }
-        Random rand = new Random();
-        // Get a joint move that hasn't been used to expand, and expand it, remove it from the pool of moves
-        int randomMoveIndex = rand.nextInt(unexpandedJointMoves.size());
-        List<Move> randomJointMove = unexpandedJointMoves.get(randomMoveIndex);
-        this.unexpandedJointMoves.remove(randomMoveIndex);
-        MCTSNode child = createChild(randomJointMove);
-        addChild(child);
+
+        // faster, but not sure if correct
+        //this.unexpandedJointMoves.remove(randomMoveIndex);
+
+        //slower, but correct
+        this.unexpandedJointMoves.remove(randomJointMove);
+
+        MCTSNode child = getChild(randomJointMove);
         return child;
     }
 
-    public List<Integer> playout() throws GoalDefinitionException
+    public List<Integer> playout() throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException
     {
         if (this.machine.isTerminal(this.state))
         {
             return this.machine.getGoals(this.state);
         }
-        return getRandomChild().playout();
+        Random rand = new Random();
+        List<List<Move>> legalJointMoves = this.machine.getLegalJointMoves(this.state);
+        int moveIndex = rand.nextInt(legalJointMoves.size());
+        List<Move> chosenMove = legalJointMoves.get(moveIndex);
+        MachineState nextState = this.machine.getNextState(this.state, chosenMove);
+        return new MCTSNode(this.machine, nextState, this, chosenMove).playout();
     }
 
     public void backprop(List<Integer> playoutGoals)
@@ -129,11 +149,30 @@ public class MCTSNode
         this.parent.backprop(playoutGoals);
     }
 
-    public MCTSNode getRandomChild()
+    public List<Move> getRandomJointAction() throws MoveDefinitionException
     {
         Random rand = new Random();
-        System.out.println("Children size: " + children.size());
-        return children.get(rand.nextInt(children.size()));
+        List<Move> chosenJointMove = this.machine.getRandomJointMove(this.state);
+        return chosenJointMove;
+    }
+
+    public MCTSNode getRandomChild() throws MoveDefinitionException, TransitionDefinitionException
+    {
+        List<Move> jointMove = getRandomJointAction();
+        MachineState nextState = this.machine.getNextState(this.state, jointMove);
+        return new MCTSNode(this.machine, nextState, this, jointMove);
+    }
+
+    public MCTSNode getChild(List<Move> jointMove) throws TransitionDefinitionException, MoveDefinitionException
+    {
+        if (this.jointMovesToChildren.containsKey(jointMove))
+        {
+            return this.jointMovesToChildren.get(jointMove);
+        }
+        MCTSNode child = createChild(jointMove);
+        addChild(child);
+        this.jointMovesToChildren.put(jointMove, child);
+        return child;
     }
 
     public void update(Integer playout, RoleMovePair rmp)
