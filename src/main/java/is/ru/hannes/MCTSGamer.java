@@ -48,6 +48,8 @@ public final class MCTSGamer extends StateMachineGamer {
         while (System.currentTimeMillis() - start < (timeout - 200))
         {
             runMCTS();
+            Move bestActionForRole = root.getBestActionForRole(getRole());
+            System.out.println("current best is " + bestActionForRole);
         }
 
         Move bestActionForRole = root.getBestActionForRole(getRole());
@@ -71,7 +73,7 @@ public final class MCTSGamer extends StateMachineGamer {
     {
         MCTSNode selectedNode = root.selection();
         List<Integer> playout = selectedNode.playout();
-        selectedNode.backprop(playout);
+        selectedNode.parent.backprop(playout);
     }
 
     @Override

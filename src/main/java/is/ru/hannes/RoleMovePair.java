@@ -9,9 +9,9 @@ import java.util.Objects;
 public class RoleMovePair
 {
     private Role role;
-    private Move move;
+    private List<Move> move;
 
-    public RoleMovePair(Role role, List<Move> moves)
+    public RoleMovePair(Role role, List<Move> move)
     {
         this.role = role;
         this.move = move;
@@ -21,7 +21,7 @@ public class RoleMovePair
     {
         return this.role;
     }
-    public Move getMove()
+    public List<Move> getMove()
     {
         return this.move;
     }

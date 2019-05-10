@@ -41,6 +41,7 @@ public class MCTSNode
         roleMovePairToN = new HashMap<>();
         //unexpandedJointMoves = machine.getLegalJointMoves(state);
         unexpandedJointMoves = null;
+
     }
 
     private void addChild(MCTSNode node) throws TransitionDefinitionException, MoveDefinitionException
@@ -55,7 +56,7 @@ public class MCTSNode
 
     public Move getBestActionForRole(Role role)
     {
-        Move argmax = null;
+        List<Move> argmax = null;
         Integer qMax = Integer.MIN_VALUE;
         for (RoleMovePair rmp : roleMovePairToQ.keySet())
         {
@@ -68,7 +69,7 @@ public class MCTSNode
                 }
             }
         }
-        return argmax;
+        return argmax.get(this.machine.getRoleIndices().get(role));
     }
 
     public MCTSNode selection() throws TransitionDefinitionException, MoveDefinitionException
@@ -136,17 +137,44 @@ public class MCTSNode
 
     public void backprop(List<Integer> playoutGoals)
     {
-        if (this.parent == null)
-        {
-            return;
-        }
 
         for (RoleMovePair rmp : roleMovePairToQ.keySet())
         {
             // update(corresponding player's playout score, RoleMovePair for that player)
             update(playoutGoals.get(this.machine.getRoleIndices().get(rmp.getRole())), rmp);
         }
+
+        if (this.parent == null)
+        {
+            return;
+        }
+
+        // make sure that the map entries exist in parent before recursing
+        this.parent.initMapsForMove(this.prevAction);
+
+
         this.parent.backprop(playoutGoals);
+    }
+
+    // The reason why we only do this for a certain move, is due to memory and time contraints, as we are
+    // backpropping we only want to update the path up to the root, not the set of children belonging to
+    // every node on the path.
+    public void initMapsForMove(List<Move> move)
+    {
+        for (Role role : this.machine.getRoles())
+        {
+            RoleMovePair rmp = new RoleMovePair(role, move);
+            //initialize q and n values to 0, if it does not exist already
+            if (!this.roleMovePairToQ.containsKey(rmp))
+            {
+                this.roleMovePairToQ.put(rmp, 0);
+            }
+            if (!this.roleMovePairToN.containsKey(rmp))
+            {
+                this.roleMovePairToN.put(rmp, 0);
+            }
+        }
+
     }
 
     public List<Move> getRandomJointAction() throws MoveDefinitionException
