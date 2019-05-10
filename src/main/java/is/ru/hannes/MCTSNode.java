@@ -66,6 +66,7 @@ public class MCTSNode
         List<Move> argmax = null;
         Integer qMax = Integer.MIN_VALUE;
         System.out.println("printing all RMP");
+
         for (RoleMovePair rmp : roleMovePairToQ.keySet())
         {
             System.out.println(rmp);
@@ -78,6 +79,7 @@ public class MCTSNode
                 }
             }
         }
+
         return argmax.get(this.machine.getRoleIndices().get(role));
     }
 
@@ -115,7 +117,7 @@ public class MCTSNode
      */
     public MCTSNode expand(List<Move> randomJointMove) throws MoveDefinitionException, TransitionDefinitionException
     {
-        if (this.machine.isTerminal(this.state))
+        if (machine.isTerminal(state))
         {
             return null;
         }
@@ -124,25 +126,25 @@ public class MCTSNode
         //this.unexpandedJointMoves.remove(randomMoveIndex);
 
         //slower, but correct
-        this.unexpandedJointMoves.remove(randomJointMove);
+        unexpandedJointMoves.remove(randomJointMove);
 
         MCTSNode child = getChild(randomJointMove);
-        child.initMapsForMove(randomJointMove);
+        initMapsForMove(randomJointMove);
         return child;
     }
 
     public List<Integer> playout() throws GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException
     {
-        if (this.machine.isTerminal(this.state))
+        if (machine.isTerminal(state))
         {
-            return this.machine.getGoals(this.state);
+            return machine.getGoals(state);
         }
         Random rand = new Random();
-        List<List<Move>> legalJointMoves = this.machine.getLegalJointMoves(this.state);
+        List<List<Move>> legalJointMoves = this.machine.getLegalJointMoves(state);
         int moveIndex = rand.nextInt(legalJointMoves.size());
         List<Move> chosenMove = legalJointMoves.get(moveIndex);
-        MachineState nextState = this.machine.getNextState(this.state, chosenMove);
-        return new MCTSNode(this.machine, nextState, this, chosenMove).playout();
+        MachineState nextState = machine.getNextState(state, chosenMove);
+        return new MCTSNode(machine, nextState, this, chosenMove).playout();
     }
 
     public void backprop(List<Integer> playoutGoals)
@@ -211,7 +213,7 @@ public class MCTSNode
     public void update(Integer playout, RoleMovePair rmp)
     {
         N++;
-        int currentRoleMoveN = roleMovePairToN.get(rmp);
+        Integer currentRoleMoveN = roleMovePairToN.get(rmp);
         Integer currentRoleMoveQ = roleMovePairToQ.get(rmp);
 
 
