@@ -3,6 +3,8 @@ package is.ru.hannes;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+import is.ru.hannes.MCTSNode.TimeoutException;
+
 import org.ggp.base.apps.player.detail.DetailPanel;
 import org.ggp.base.apps.player.detail.SimpleDetailPanel;
 import org.ggp.base.player.gamer.event.GamerSelectedMoveEvent;
@@ -25,11 +27,13 @@ import java.util.HashMap;
 import org.ggp.base.util.statemachine.Move;
 import org.ggp.base.util.statemachine.Role;
 
-public final class MCTSGamer extends StateMachineGamer {
+public final class MCTSGamer extends StateMachineGamer 
+{
 
     MCTSNode root;
     MCTSNode currentNode;
-    int i = 0;
+    
+    //int i = 0;
 
 
     @Override
@@ -41,14 +45,14 @@ public final class MCTSGamer extends StateMachineGamer {
     @Override
     public Move stateMachineSelectMove(long timeout) throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException 
     {
-        long start = System.currentTimeMillis();
+        long end = timeout ;
         //System.out.println(getStateMachine());
         root = new MCTSNode(getStateMachine(), getCurrentState(), null, null);
         currentNode = root;
 
-        while (System.currentTimeMillis() - start < (timeout - 200))
+        while (System.currentTimeMillis() < end)
         {
-            runMCTS();
+            runMCTS(end);
             Move bestActionForRole = root.getBestActionForRole(getRole());
             //System.out.println("current best is " + bestActionForRole);
         }
@@ -70,23 +74,32 @@ public final class MCTSGamer extends StateMachineGamer {
         // Random gamer does no game previewing.
     }
 
-    public void runMCTS() throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException
+    public void runMCTS(long timeout) throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException
     {
-        MCTSNode selectedNode = root.selection();
-        List<Integer> playout = selectedNode.playout();
-        selectedNode.parent.backprop(playout);
-        if (i % 1000 == 0)
+        try 
         {
-            System.out.println("");
-        }
-        for (RoleMovePair rmp : root.roleMovePairToQ.keySet())
+            MCTSNode selectedNode = root.selection();
+            List<Integer> playout = selectedNode.playout(timeout);
+            selectedNode.parent.backprop(playout, timeout);
+            //selectedNode.backprop(playout, timeout);
+            
+            /** 
+             * 
+             for (RoleMovePair rmp : root.roleMovePairToQ.keySet())
+             {
+                 if (i % 1000 == 0)
+                 {
+                     // System.out.println("action/Q for root: " + rmp.getMove() + ", " + root.roleMovePairToQ.get(rmp));
+                    }
+                }
+                i++;
+            */
+        } 
+        catch (TimeoutException e)
         {
-            if (i % 1000 == 0)
-            {
-                System.out.println("action/Q for root: " + rmp.getMove() + ", " + root.roleMovePairToQ.get(rmp));
-            }
+            // Nothing to do here
+            System.out.println("Timeout - going with current best");
         }
-        i++;
     }
 
     @Override
