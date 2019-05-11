@@ -32,10 +32,10 @@ public final class MCTSGamer extends StateMachineGamer
 
     MCTSNode root;
     MCTSNode currentNode;
-    double explorationFactor = 4;
+    double explorationFactor = 5;
     SelectionHeuristic heuristic = SelectionHeuristic.UCB;
     
-    //int i = 0;
+    int i = 0;
 
 
     @Override
@@ -75,6 +75,25 @@ public final class MCTSGamer extends StateMachineGamer
         // Random gamer does no game previewing.
     }
 
+    public int depth(MCTSNode node)
+    {
+        if (node.children.isEmpty())
+        {
+            return 0;
+        }
+        MCTSNode argmax = null;
+        int max = Integer.MIN_VALUE;
+        for (MCTSNode child : node.children)
+        {
+            int depth = 1 + depth(child);
+            if (depth > max)
+            {
+                max = depth;
+            }
+        }
+        return max;
+    }
+
     public void runMCTS(long timeout) throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException
     {
         try 
@@ -84,17 +103,21 @@ public final class MCTSGamer extends StateMachineGamer
             selectedNode.parent.backprop(playout, timeout);
             //selectedNode.backprop(playout, timeout);
             
-            /** 
-             * 
+
+            if (i % 1000 == 0)
+            {
+                System.out.println();
+            }
              for (RoleMovePair rmp : root.roleMovePairToQ.keySet())
              {
-                 if (i % 1000 == 0)
+                 if (i % 1000 == 0 && rmp.getRole().equals(getRole()))
                  {
-                     // System.out.println("action/Q for root: " + rmp.getMove() + ", " + root.roleMovePairToQ.get(rmp));
+                     System.out.println("action/Q for root: " + rmp.getMove() + " for role " + rmp.getRole() + " for root: " + root.roleMovePairToQ.get(rmp));
+                     System.out.println("Tree depth: " + depth(root));
                     }
                 }
                 i++;
-            */
+
         } 
         catch (TimeoutException e)
         {

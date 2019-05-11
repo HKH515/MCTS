@@ -67,7 +67,7 @@ public class MCTSNode
     public List<Move> getBestActionForRole(Role role, SelectionHeuristic heuristic, double explorationFactor) throws MoveDefinitionException
     {
         List<Move> argmax = null;
-        Integer qMax = Integer.MIN_VALUE;
+        double qMax = Double.NEGATIVE_INFINITY;
 
         for (List<Move> move : machine.getLegalJointMoves(state))
         {
@@ -75,16 +75,19 @@ public class MCTSNode
             initMapsForMove(move);
             RoleMovePair rmp = new RoleMovePair(role, move);
 
+            //System.out.println("move: " + move + " for role " + role + " has been accessed " + N + " times");
             if (rmp.getRole().equals(role))
             {
                 if (heuristic.equals(SelectionHeuristic.UCB))
                 {
-                    int ucbValue = ucbHeuristic(roleMovePairToQ.get(rmp), roleMovePairToN.get(rmp), N, explorationFactor);
+                    double ucbValue = ucbHeuristic(roleMovePairToQ.get(rmp), roleMovePairToN.get(rmp), N, explorationFactor);
+                    //System.out.println("move " + move + "has ucb: " + ucbValue);
                     if (ucbValue > qMax)
                     {
                         qMax = ucbValue;
                         argmax = rmp.getMove();
                     }
+
                 }
             }
         }
@@ -101,13 +104,14 @@ public class MCTSNode
     }
 
 
-    public int ucbHeuristic(int qValue, int nValue, int nOfNode, double c)
+    public double ucbHeuristic(int qValue, int nValue, int nOfNode, double c)
     {
         if (nValue == 0)
         {
             return Integer.MAX_VALUE;
         }
-        return (int)(qValue + (c * Math.sqrt(Math.log(nOfNode)/nValue)));
+        //System.out.println("Math.sqrt(Math.log(" + nOfNode + ")/" + nValue + ")))" + " = " + Math.sqrt(Math.log(nOfNode)/nValue));
+        return qValue + (c * Math.sqrt(Math.log(nOfNode)/nValue));
     }
 
     public MCTSNode selection(Role role, SelectionHeuristic heuristic, double explorationFactor) throws TransitionDefinitionException, MoveDefinitionException
