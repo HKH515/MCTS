@@ -49,18 +49,24 @@ public final class MCTSGamer extends StateMachineGamer
     {
         long end = timeout ;
         //System.out.println(getStateMachine());
-        root = new MCTSNode(getStateMachine(), getCurrentState(), null, null);
-        currentNode = root;
+        if (currentNode == null)
+        {
+            root = new MCTSNode(getStateMachine(), getCurrentState(), null, null);
+            currentNode = root;
+        }
 
+        List<Move> bestActionForRole = null;
         while (System.currentTimeMillis() < end)
         {
             runMCTS(end);
-            Move bestActionForRole = root.getBestNonJointActionForRole(getRole(), heuristic, explorationFactor);
+            bestActionForRole = currentNode.getBestActionForRole(getRole(), heuristic, explorationFactor);
         }
 
-        Move bestActionForRole = root.getBestNonJointActionForRole(getRole(), heuristic, explorationFactor);
+        bestActionForRole = currentNode.getBestActionForRole(getRole(), heuristic, explorationFactor);
+        Move nonJointBestActionForRole = bestActionForRole.get(getStateMachine().getRoleIndices().get(getRole()));
 
-        return bestActionForRole;
+        currentNode = root.getChild(bestActionForRole);
+        return nonJointBestActionForRole;
     }
 
     @Override
@@ -98,22 +104,22 @@ public final class MCTSGamer extends StateMachineGamer
     {
         try 
         {
-            MCTSNode selectedNode = root.selection(getRole(), heuristic, explorationFactor);
+            MCTSNode selectedNode = currentNode.selection(getRole(), heuristic, explorationFactor);
             List<Integer> playout = selectedNode.playout(timeout);
             selectedNode.parent.backprop(playout, timeout);
             //selectedNode.backprop(playout, timeout);
 
 
-             for (RoleMovePair rmp : root.roleMovePairToQ.keySet())
+             for (RoleMovePair rmp : currentNode.roleMovePairToQ.keySet())
              {
                  if (i % 1000 == 0 && rmp.getRole().equals(getRole()))
                  {
-                     System.out.println("action/Q for root: " + rmp.getMove() + " for role " + rmp.getRole() + " for root: " + root.roleMovePairToQ.get(rmp));
+                     System.out.println("action/Q for root: " + rmp.getMove() + " for role " + rmp.getRole() + " for root: " + currentNode.roleMovePairToQ.get(rmp));
                     }
                 }
             if (i % 1000 == 0)
             {
-                System.out.println("Tree depth: " + depth(root));
+                System.out.println("Tree depth: " + depth(currentNode));
                 System.out.println();
 
             }
@@ -136,6 +142,8 @@ public final class MCTSGamer extends StateMachineGamer
     @Override
     public void stateMachineStop() 
     {
+        root = null;
+        currentNode = null;
         // Random gamer does no special cleanup when the match ends normally.
     }
 
