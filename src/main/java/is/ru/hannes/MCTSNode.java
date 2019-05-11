@@ -114,7 +114,7 @@ public class MCTSNode
         return qValue + (c * Math.sqrt(Math.log(nOfNode)/nValue));
     }
 
-    public MCTSNode selection(Role role, SelectionHeuristic heuristic, double explorationFactor) throws TransitionDefinitionException, MoveDefinitionException
+    public MCTSNode selection(Role role, SelectionHeuristic heuristic, double explorationFactor, boolean shouldExpand) throws TransitionDefinitionException, MoveDefinitionException
     {
         if (machine.isTerminal(state))
         {
@@ -130,14 +130,14 @@ public class MCTSNode
         List<Move> action = getBestActionForRole(role, heuristic, explorationFactor);
 
 
-        if (unexpandedJointMoves.contains(action))
+        if (unexpandedJointMoves.contains(action) && shouldExpand)
         {
             return expand(action);
         }
 
         else
         {
-            return getChild(action).selection(role, heuristic, explorationFactor);
+            return getChild(action).selection(role, heuristic, explorationFactor, shouldExpand);
         }
     }
 
@@ -279,7 +279,7 @@ public class MCTSNode
     {
         try
         {
-            MCTSNode selectedNode = root.selection(role, heuristic, explorationFactor);
+            MCTSNode selectedNode = root.selection(role, heuristic, explorationFactor, false);
             List<Integer> playout = selectedNode.playout(timeout);
             selectedNode.parent.backprop(playout, timeout);
             //selectedNode.backprop(playout, timeout);

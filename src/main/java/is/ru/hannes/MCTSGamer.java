@@ -81,6 +81,7 @@ public final class MCTSGamer extends StateMachineGamer
         // Random gamer does no game previewing.
     }
 
+
     public int depth(MCTSNode node)
     {
         if (node.children.isEmpty())
@@ -104,7 +105,7 @@ public final class MCTSGamer extends StateMachineGamer
     {
         try 
         {
-            MCTSNode selectedNode = currentNode.selection(getRole(), heuristic, explorationFactor);
+            MCTSNode selectedNode = currentNode.selection(getRole(), heuristic, explorationFactor, (depth(root) < 230));
             List<Integer> playout = selectedNode.playout(timeout);
             selectedNode.parent.backprop(playout, timeout);
             //selectedNode.backprop(playout, timeout);
@@ -136,6 +137,7 @@ public final class MCTSGamer extends StateMachineGamer
     @Override
     public void stateMachineMetaGame(long timeout) throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException
     {
+        //runMCTS(timeout);
         // Random gamer does no metagaming at the beginning of the match.
     }
 
