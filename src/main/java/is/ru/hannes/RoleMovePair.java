@@ -31,5 +31,13 @@ public class RoleMovePair
     {
         return Objects.hash(role, move);
     }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        Boolean sameRole = (this.getRole().equals(((RoleMovePair)o).getRole()));
+        Boolean sameMove = (this.getMove().equals(((RoleMovePair)o).getMove()));
+        return sameRole && sameMove;
+    }
     
 }

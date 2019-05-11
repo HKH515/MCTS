@@ -32,6 +32,8 @@ public final class MCTSGamer extends StateMachineGamer
 
     MCTSNode root;
     MCTSNode currentNode;
+    double explorationFactor = 4;
+    SelectionHeuristic heuristic = SelectionHeuristic.UCB;
     
     //int i = 0;
 
@@ -53,11 +55,10 @@ public final class MCTSGamer extends StateMachineGamer
         while (System.currentTimeMillis() < end)
         {
             runMCTS(end);
-            Move bestActionForRole = root.getBestActionForRole(getRole());
-            //System.out.println("current best is " + bestActionForRole);
+            Move bestActionForRole = root.getBestNonJointActionForRole(getRole(), heuristic, explorationFactor);
         }
 
-        Move bestActionForRole = root.getBestActionForRole(getRole());
+        Move bestActionForRole = root.getBestNonJointActionForRole(getRole(), heuristic, explorationFactor);
 
         return bestActionForRole;
     }
@@ -78,7 +79,7 @@ public final class MCTSGamer extends StateMachineGamer
     {
         try 
         {
-            MCTSNode selectedNode = root.selection();
+            MCTSNode selectedNode = root.selection(getRole(), heuristic, explorationFactor);
             List<Integer> playout = selectedNode.playout(timeout);
             selectedNode.parent.backprop(playout, timeout);
             //selectedNode.backprop(playout, timeout);

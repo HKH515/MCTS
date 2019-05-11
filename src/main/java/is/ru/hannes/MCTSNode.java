@@ -62,29 +62,55 @@ public class MCTSNode
         return new MCTSNode(machine, machine.getNextState(state, jointMove), this, jointMove);
     }
 
-    public Move getBestActionForRole(Role role)
+    // finds a joint move that maximizes the score for a specific role.
+    // returns a list of moves, an example is [noop, noop, noop, move a 3 b 4, noop, noop]
+    public List<Move> getBestActionForRole(Role role, SelectionHeuristic heuristic, double explorationFactor) throws MoveDefinitionException
     {
         List<Move> argmax = null;
         Integer qMax = Integer.MIN_VALUE;
 
-        for (RoleMovePair rmp : roleMovePairToQ.keySet())
+        for (List<Move> move : machine.getLegalJointMoves(state))
         {
+            // make sure we have an entry in the map
+            initMapsForMove(move);
+            RoleMovePair rmp = new RoleMovePair(role, move);
+
             if (rmp.getRole().equals(role))
             {
-                if (roleMovePairToQ.get(rmp) > qMax)
+                if (heuristic.equals(SelectionHeuristic.UCB))
                 {
-                    qMax = roleMovePairToQ.get(rmp);
-                    argmax = rmp.getMove();
+                    int ucbValue = ucbHeuristic(roleMovePairToQ.get(rmp), roleMovePairToN.get(rmp), N, explorationFactor);
+                    if (ucbValue > qMax)
+                    {
+                        qMax = ucbValue;
+                        argmax = rmp.getMove();
+                    }
                 }
             }
         }
 
-        int roleIdx = machine.getRoleIndices().get(role);
-
-        return argmax.get(roleIdx);
+        return argmax;
     }
 
-    public MCTSNode selection() throws TransitionDefinitionException, MoveDefinitionException
+    // Rather than e.g. returning [noop, noop, noop, move a 3 b 4, noop, noop],
+    // will only give move a 3 b 4 if the 5th role is requested
+    public Move getBestNonJointActionForRole(Role role, SelectionHeuristic heuristic, double explorationFactor) throws MoveDefinitionException
+    {
+        int roleIdx = machine.getRoleIndices().get(role);
+        return getBestActionForRole(role, heuristic, explorationFactor).get(roleIdx);
+    }
+
+
+    public int ucbHeuristic(int qValue, int nValue, int nOfNode, double c)
+    {
+        if (nValue == 0)
+        {
+            return Integer.MAX_VALUE;
+        }
+        return (int)(qValue + (c * Math.sqrt(Math.log(nOfNode)/nValue)));
+    }
+
+    public MCTSNode selection(Role role, SelectionHeuristic heuristic, double explorationFactor) throws TransitionDefinitionException, MoveDefinitionException
     {
         if (machine.isTerminal(state))
         {
@@ -97,18 +123,20 @@ public class MCTSNode
             unexpandedJointMoves = new HashSet<>(machine.getLegalJointMoves(state));
         }
 
-        List<Move> randomAction = getRandomJointAction();
+        List<Move> action = getBestActionForRole(role, heuristic, explorationFactor);
 
-        if (unexpandedJointMoves.contains(randomAction))
+
+        if (unexpandedJointMoves.contains(action))
         {
-            return expand(randomAction);
+            return expand(action);
         }
 
         else
         {
-            return getChild(randomAction);
+            return getChild(action);
         }
     }
+
 
     /*
     * Picks a random joint move from the legal moves, and creates a child
@@ -117,6 +145,7 @@ public class MCTSNode
      */
     public MCTSNode expand(List<Move> randomJointMove) throws MoveDefinitionException, TransitionDefinitionException
     {
+        assert (randomJointMove != null);
         if (machine.isTerminal(state))
         {
             return null;
