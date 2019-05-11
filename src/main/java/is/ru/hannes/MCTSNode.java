@@ -137,7 +137,7 @@ public class MCTSNode
 
         else
         {
-            return getChild(action);
+            return getChild(action).selection(role, heuristic, explorationFactor);
         }
     }
 
@@ -172,7 +172,7 @@ public class MCTSNode
 
         if (currentTime > timeout)
         {
-            throw new TimeoutException();
+            //throw new TimeoutException();
         }
 
         if (machine.isTerminal(state))
@@ -194,7 +194,7 @@ public class MCTSNode
 
         if (currentTime > timeout)
         {
-            throw new TimeoutException();
+            //throw new TimeoutException();
         }
 
         for (RoleMovePair rmp : roleMovePairToQ.keySet())
@@ -274,6 +274,31 @@ public class MCTSNode
         roleMovePairToN.put(rmp, currentRoleMoveN + 1);
     }
 
+
+    public static void runMCTS(MCTSNode root, Role role, SelectionHeuristic heuristic, int explorationFactor, int timeout) throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException
+    {
+        try
+        {
+            MCTSNode selectedNode = root.selection(role, heuristic, explorationFactor);
+            List<Integer> playout = selectedNode.playout(timeout);
+            selectedNode.parent.backprop(playout, timeout);
+            //selectedNode.backprop(playout, timeout);
+
+
+            for (RoleMovePair rmp : root.roleMovePairToQ.keySet())
+            {
+                if (rmp.getRole().equals(role))
+                {
+                    System.out.println("action/Q for root: " + rmp.getMove() + " for role " + rmp.getRole() + " for root: " + root.roleMovePairToQ.get(rmp));
+                }
+            }
+        }
+        catch (TimeoutException e)
+        {
+            System.out.println("When running main function in MCTSNode, ran out of time, giving best");
+        }
+    }
+
     public static void main(String[] args) throws Exception
     {
         // setting up the state machine
@@ -284,6 +309,14 @@ public class MCTSNode
         PropNetStateMachine stateMachine = new RecursiveForwardChangePropNetStateMachine(new GGPBasePropNetStructureFactory()); // insert your own machine here
         stateMachine.initialize(ggpBaseGame.getRules());
 
-        //MCTSNode root = new MCTSNode();
+        Role role = (Role)stateMachine.getRoles().get(0);
+        MachineState currentState = stateMachine.getInitialState();
+
+        MCTSNode root = new MCTSNode(stateMachine, currentState, null, null);
+
+        for (int i = 0; i < 10000; i++)
+        {
+            runMCTS(root, role, SelectionHeuristic.UCB, 1, 10000);
+        }
     }
 }
