@@ -32,7 +32,7 @@ public final class MCTSGamer extends StateMachineGamer
 
     MCTSNode root;
     MCTSNode currentNode;
-    double explorationFactor = 5;
+    double explorationFactor = 50;
     SelectionHeuristic heuristic = SelectionHeuristic.UCB;
     
     int i = 0;
@@ -102,20 +102,21 @@ public final class MCTSGamer extends StateMachineGamer
             List<Integer> playout = selectedNode.playout(timeout);
             selectedNode.parent.backprop(playout, timeout);
             //selectedNode.backprop(playout, timeout);
-            
 
-            if (i % 1000 == 0)
-            {
-                System.out.println();
-            }
+
              for (RoleMovePair rmp : root.roleMovePairToQ.keySet())
              {
                  if (i % 1000 == 0 && rmp.getRole().equals(getRole()))
                  {
                      System.out.println("action/Q for root: " + rmp.getMove() + " for role " + rmp.getRole() + " for root: " + root.roleMovePairToQ.get(rmp));
-                     System.out.println("Tree depth: " + depth(root));
                     }
                 }
+            if (i % 1000 == 0)
+            {
+                System.out.println("Tree depth: " + depth(root));
+                System.out.println();
+
+            }
                 i++;
 
         } 
