@@ -62,6 +62,11 @@ public class MCTSNode
         return new MCTSNode(machine, machine.getNextState(state, jointMove), this, jointMove);
     }
 
+    public List<Move> getPrevAction()
+    {
+        return prevAction;
+    }
+
     // finds a joint move that maximizes the score for a specific role.
     // returns a list of moves, an example is [noop, noop, noop, move a 3 b 4, noop, noop]
     public List<Move> getBestActionForRole(Role role, SelectionHeuristic heuristic, double explorationFactor) throws MoveDefinitionException
@@ -188,7 +193,7 @@ public class MCTSNode
         return new MCTSNode(machine, nextState, this, chosenMove).playout(timeout);
     }
 
-    public void backprop(List<Integer> playoutGoals, long timeout) throws TimeoutException
+    public void backprop(List<Integer> playoutGoals, List<Move> playerMoves, long timeout) throws TimeoutException
     {
         long currentTime = System.currentTimeMillis();
 
@@ -200,7 +205,11 @@ public class MCTSNode
         for (RoleMovePair rmp : roleMovePairToQ.keySet())
         {
             // update(corresponding player's playout score, RoleMovePair for that player)
-            update(playoutGoals.get(machine.getRoleIndices().get(rmp.getRole())), rmp);
+            if (rmp.getMove().equals(playerMoves)) 
+            {
+                update(playoutGoals.get(machine.getRoleIndices().get(rmp.getRole())), rmp);
+        
+            }
         }
 
         if (parent == null)
@@ -208,7 +217,7 @@ public class MCTSNode
             return;
         }
 
-        parent.backprop(playoutGoals, timeout);
+        parent.backprop(playoutGoals, this.prevAction, timeout);
     }
 
     // The reason why we only do this for a certain move, is due to memory and time contraints, as we are
@@ -281,7 +290,10 @@ public class MCTSNode
         {
             MCTSNode selectedNode = root.selection(role, heuristic, explorationFactor);
             List<Integer> playout = selectedNode.playout(timeout);
-            selectedNode.parent.backprop(playout, timeout);
+            
+            // TODO: fix missing prevaction here 
+
+            //selectedNode.parent.backprop(playout, timeout);
             //selectedNode.backprop(playout, timeout);
 
 

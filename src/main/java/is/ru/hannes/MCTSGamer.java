@@ -49,7 +49,7 @@ public final class MCTSGamer extends StateMachineGamer
     {
         long end = timeout ;
         //System.out.println(getStateMachine());
-        if (currentNode == null)
+        //if (currentNode == null)
         {
             root = new MCTSNode(getStateMachine(), getCurrentState(), null, null);
             currentNode = root;
@@ -65,7 +65,8 @@ public final class MCTSGamer extends StateMachineGamer
         bestActionForRole = currentNode.getBestActionForRole(getRole(), heuristic, explorationFactor);
         Move nonJointBestActionForRole = bestActionForRole.get(getStateMachine().getRoleIndices().get(getRole()));
 
-        currentNode = root.getChild(bestActionForRole);
+        //root = currentNode.getChild(bestActionForRole);
+        //currentNode = root;
         return nonJointBestActionForRole;
     }
 
@@ -106,18 +107,18 @@ public final class MCTSGamer extends StateMachineGamer
         {
             MCTSNode selectedNode = currentNode.selection(getRole(), heuristic, explorationFactor);
             List<Integer> playout = selectedNode.playout(timeout);
-            selectedNode.parent.backprop(playout, timeout);
+            selectedNode.parent.backprop(playout, selectedNode.getPrevAction(), timeout);
             //selectedNode.backprop(playout, timeout);
 
 
              for (RoleMovePair rmp : currentNode.roleMovePairToQ.keySet())
              {
-                 if (i % 1000 == 0 && rmp.getRole().equals(getRole()))
+                 if (i % 90000 == 0 && rmp.getRole().equals(getRole()))
                  {
                      System.out.println("action/Q for root: " + rmp.getMove() + " for role " + rmp.getRole() + " for root: " + currentNode.roleMovePairToQ.get(rmp));
-                    }
-                }
-            if (i % 1000 == 0)
+                 }
+            }
+            if (i % 90000 == 0)
             {
                 System.out.println("Tree depth: " + depth(currentNode));
                 System.out.println();
