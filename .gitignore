@@ -3,6 +3,7 @@
 
 # Log file
 *.log
+logs/*
 
 # BlueJ files
 *.ctxt
@@ -24,3 +25,15 @@ hs_err_pid*
 
 # gradle
 build.gradle
+
+# bin
+bin/*
+
+# extra stuff
+out/*
+.classpath
+.gradle/*
+.vscode/*
+.idea/*
+.settings/*
+.project
