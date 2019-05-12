@@ -130,14 +130,22 @@ public class MCTSNode
         List<Move> action = getBestActionForRole(role, heuristic, explorationFactor);
 
 
-        if (unexpandedJointMoves.contains(action) && shouldExpand)
+        if (shouldExpand)
         {
-            return expand(action);
-        }
+            if (unexpandedJointMoves.contains(action))
+            {
+                return expand(action);
+            }
 
+            else
+            {
+                return getChild(action).selection(role, heuristic, explorationFactor, shouldExpand);
+            }
+        }
         else
         {
-            return getChild(action).selection(role, heuristic, explorationFactor, shouldExpand);
+            // if we've run out of memory, we return the current node as the selected
+            return this;
         }
     }
 
@@ -275,14 +283,22 @@ public class MCTSNode
     }
 
 
-    public static void runMCTS(MCTSNode root, Role role, SelectionHeuristic heuristic, int explorationFactor, int timeout) throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException
+    public static void runMCTS(MCTSNode root, Role role, SelectionHeuristic heuristic, int explorationFactor, int timeout, boolean shouldExpand) throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException, ShallowTreeException
     {
         try
         {
-            MCTSNode selectedNode = root.selection(role, heuristic, explorationFactor, false);
+            MCTSNode selectedNode = root.selection(role, heuristic, explorationFactor, shouldExpand);
             List<Integer> playout = selectedNode.playout(timeout);
-            selectedNode.parent.backprop(playout, timeout);
-            //selectedNode.backprop(playout, timeout);
+
+            if (selectedNode.parent != null)
+            {
+                selectedNode.parent.backprop(playout, timeout);
+                //selectedNode.backprop(playout, timeout);
+            }
+            else
+            {
+                throw new ShallowTreeException();
+            }
 
 
             for (RoleMovePair rmp : root.roleMovePairToQ.keySet())
@@ -316,7 +332,7 @@ public class MCTSNode
 
         for (int i = 0; i < 10000; i++)
         {
-            runMCTS(root, role, SelectionHeuristic.UCB, 1, 10000);
+            runMCTS(root, role, SelectionHeuristic.UCB, 1, 10000, true);
         }
     }
 }
