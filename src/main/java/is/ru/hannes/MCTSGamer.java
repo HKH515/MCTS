@@ -120,7 +120,8 @@ public final class MCTSGamer extends StateMachineGamer
             selectedNode.parent.backprop(playout, selectedNode.getPrevAction(), timeout);
 
 
-             for (RoleMovePair rmp : currentNode.roleMovePairToQ.keySet())
+
+             /*for (RoleMovePair rmp : currentNode.roleMovePairToQ.keySet())
              {
                  if (i % 2000 == 0 && rmp.getRole().equals(getRole()))
                  {
@@ -133,13 +134,13 @@ public final class MCTSGamer extends StateMachineGamer
                 //System.out.println();
 
             }
-            i++;
+            i++;*/
 
         } 
         catch (TimeoutException e)
         {
             // Nothing to do here
-            System.out.println("Timeout - going with current best");
+            System.out.println("Deliberation time is up - going with current best");
         }
     }
 
