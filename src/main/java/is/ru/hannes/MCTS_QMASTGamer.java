@@ -27,7 +27,7 @@ import java.util.HashMap;
 import org.ggp.base.util.statemachine.Move;
 import org.ggp.base.util.statemachine.Role;
 
-public final class MCTSGamer extends StateMachineGamer 
+public final class MCTS_QMASTGamer extends StateMachineGamer 
 {
 
     MCTSNode root;
@@ -36,7 +36,7 @@ public final class MCTSGamer extends StateMachineGamer
     SelectionHeuristic heuristic = SelectionHeuristic.UCB;
 
     HashMap<RoleMovePair, QNPair> QMAST;
-    boolean useQMAST = false;
+    boolean useQMAST = true;
     
     int i = 0;
 
@@ -44,7 +44,7 @@ public final class MCTSGamer extends StateMachineGamer
     @Override
     public String getName() 
     {
-        return "MCTSGamer";
+        return "MCTS_QMASTGamer";
     }
 
     @Override
@@ -122,12 +122,12 @@ public final class MCTSGamer extends StateMachineGamer
 
              for (RoleMovePair rmp : currentNode.roleMovePairToQ.keySet())
              {
-                 if (i % 2000 == 0 && rmp.getRole().equals(getRole()))
+                 if (i % 90000 == 0 && rmp.getRole().equals(getRole()))
                  {
                      //System.out.println("action/Q for root: " + rmp.getMove() + " for role " + rmp.getRole() + " for root: " + currentNode.roleMovePairToQ.get(rmp));
                  }
             }
-            if (i % 2000 == 0)
+            if (i % 90000 == 0)
             {
                 //System.out.println("Tree depth: " + depth(currentNode));
                 //System.out.println();

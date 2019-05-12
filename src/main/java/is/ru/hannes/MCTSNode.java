@@ -34,11 +34,12 @@ public class MCTSNode
     StateMachine machine;
     MCTSNode parent;
     List<Move> prevAction;
+    boolean useQMAST;
 
     public class TimeoutException extends Exception {}
 
     public MCTSNode(StateMachine machine, MachineState state, MCTSNode parent, List<Move> prevAction, 
-        HashMap<RoleMovePair, QNPair> QMAST) throws MoveDefinitionException
+        HashMap<RoleMovePair, QNPair> QMAST, boolean useQMAST) throws MoveDefinitionException
     {
         this.machine = machine;
         this.state = state;
@@ -47,6 +48,7 @@ public class MCTSNode
         this.children = new LinkedList<>();
         this.jointMovesToChildren = new HashMap<>();
         this.QMAST = QMAST;
+        this.useQMAST = useQMAST;
         N = 0;
         roleMovePairToQ = new HashMap<>();
         roleMovePairToN = new HashMap<>();
@@ -54,7 +56,7 @@ public class MCTSNode
         //unexpandedJointMoves = machine.getLegalJointMoves(state);
         unexpandedJointMoves = null;
     }
-
+    
     private void addChild(MCTSNode node) throws TransitionDefinitionException, MoveDefinitionException
     {
         children.add(node);
@@ -62,7 +64,7 @@ public class MCTSNode
 
     private MCTSNode createChild(List<Move> jointMove) throws TransitionDefinitionException, MoveDefinitionException
     {
-        return new MCTSNode(machine, machine.getNextState(state, jointMove), this, jointMove, QMAST);
+        return new MCTSNode(machine, machine.getNextState(state, jointMove), this, jointMove, QMAST, useQMAST);
     }
 
     public List<Move> getPrevAction()
@@ -77,7 +79,6 @@ public class MCTSNode
         List<Move> argmax = null;
         double qMax = Double.NEGATIVE_INFINITY;
 
-        System.out.println("qmast size: " + QMAST.size());
         for (List<Move> move : machine.getLegalJointMoves(state))
         {
             // make sure we have an entry in the map
@@ -189,7 +190,7 @@ public class MCTSNode
 
         if (currentTime > timeout)
         {
-            //throw new TimeoutException();
+            throw new TimeoutException();
         }
 
         if (machine.isTerminal(state))
@@ -202,7 +203,7 @@ public class MCTSNode
         int moveIndex = rand.nextInt(legalJointMoves.size());
         List<Move> chosenMove = legalJointMoves.get(moveIndex);
         MachineState nextState = machine.getNextState(state, chosenMove);
-        return new MCTSNode(machine, nextState, this, chosenMove, QMAST).playout(timeout);
+        return new MCTSNode(machine, nextState, this, chosenMove, QMAST, useQMAST).playout(timeout);
     }
 
     public void backprop(List<Integer> playoutGoals, List<Move> playerMoves, long timeout) throws TimeoutException
@@ -211,7 +212,7 @@ public class MCTSNode
 
         if (currentTime > timeout)
         {
-            //throw new TimeoutException();
+            throw new TimeoutException();
         }
 
         for (RoleMovePair rmp : roleMovePairToQ.keySet())
@@ -264,7 +265,7 @@ public class MCTSNode
     {
         List<Move> jointMove = getRandomJointAction();
         MachineState nextState = machine.getNextState(state, jointMove);
-        return new MCTSNode(machine, nextState, this, jointMove, QMAST);
+        return new MCTSNode(machine, nextState, this, jointMove, QMAST, useQMAST);
     }
 
     public MCTSNode getChild(List<Move> jointMove) throws TransitionDefinitionException, MoveDefinitionException
@@ -294,22 +295,25 @@ public class MCTSNode
         // N(s,r,a)
         roleMovePairToN.put(rmp, currentRoleMoveN + 1);
 
-        // Update QMAST values
-        QNPair currentQMAST = QMAST.get(rmp);
-
-        if (currentQMAST == null)
+        if (useQMAST)
         {
-            QMAST.put(rmp, new QNPair());
-            currentQMAST = QMAST.get(rmp);
+            // Update QMAST values
+            QNPair currentQMAST = QMAST.get(rmp);
+
+            if (currentQMAST == null)
+            {
+                QMAST.put(rmp, new QNPair());
+                currentQMAST = QMAST.get(rmp);
+            }
+
+            Integer qmastQ = currentQMAST.getQ();
+            Integer qmastN = currentQMAST.getN();
+
+            nextValue = qmastQ + ((playout - qmastQ)/(++qmastN));
+            
+            currentQMAST.setQ(nextValue);
+            currentQMAST.setN(qmastN);
         }
-
-        Integer qmastQ = currentQMAST.getQ();
-        Integer qmastN = currentQMAST.getN();
-
-        nextValue = qmastQ + ((playout - qmastQ)/(++qmastN));
-        
-        currentQMAST.setQ(nextValue);
-        currentQMAST.setN(qmastN);
     }
 
 
