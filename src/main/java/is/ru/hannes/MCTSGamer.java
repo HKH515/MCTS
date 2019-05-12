@@ -116,7 +116,7 @@ public final class MCTSGamer extends StateMachineGamer
         try 
         {
             MCTSNode selectedNode = currentNode.selection(getRole(), heuristic, explorationFactor, (depth(root) < 230));
-            List<Integer> playout = selectedNode.playout(timeout);
+            List<Integer> playout = selectedNode.playout(timeout, getRole());
             selectedNode.parent.backprop(playout, selectedNode.getPrevAction(), timeout);
 
 

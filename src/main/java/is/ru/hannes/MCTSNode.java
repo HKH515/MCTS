@@ -184,7 +184,7 @@ public class MCTSNode
         return child;
     }
 
-    public List<Integer> playout(long timeout) throws TimeoutException, GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException
+    public List<Integer> playout(long timeout, Role roleToMaximize) throws TimeoutException, GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException
     {
         long currentTime = System.currentTimeMillis();
 
@@ -200,10 +200,19 @@ public class MCTSNode
 
         Random rand = new Random();
         List<List<Move>> legalJointMoves = this.machine.getLegalJointMoves(state);
-        int moveIndex = rand.nextInt(legalJointMoves.size());
+        int moveIndex;
+        if (useQMAST)
+        {
+            List<Move> maxGibbsMove = getMostLikelyMoveGibbs(legalJointMoves, roleToMaximize);
+            moveIndex = legalJointMoves.indexOf(maxGibbsMove);
+        }
+        else
+        {
+            moveIndex = rand.nextInt(legalJointMoves.size());
+        }
         List<Move> chosenMove = legalJointMoves.get(moveIndex);
         MachineState nextState = machine.getNextState(state, chosenMove);
-        return new MCTSNode(machine, nextState, this, chosenMove, QMAST, useQMAST).playout(timeout);
+        return new MCTSNode(machine, nextState, this, chosenMove, QMAST, useQMAST).playout(timeout, roleToMaximize);
     }
 
     public void backprop(List<Integer> playoutGoals, List<Move> playerMoves, long timeout) throws TimeoutException
@@ -314,6 +323,50 @@ public class MCTSNode
             currentQMAST.setQ(nextValue);
             currentQMAST.setN(qmastN);
         }
+    }
+
+    public List<Move> getMostLikelyMoveGibbs(List<List<Move>> moves, Role roleToMaximize)
+    {
+        List<Move> argMax = null;
+        double max = Double.NEGATIVE_INFINITY;
+
+        for (List<Move> move : moves)
+        {
+            double gibbsScore = gibbs(moves, move, roleToMaximize, 0.5);
+            if (gibbsScore > max)
+            {
+                argMax = move;
+                max = gibbsScore;
+            }
+        }
+        return argMax;
+
+    }
+
+    public double gibbs(List<List<Move>> moves, List<Move> a, Role roleToMaximize, double tau)
+    {
+        double denom = 0;
+        for (List<Move> move : moves)
+        {
+            RoleMovePair rmp = new RoleMovePair(roleToMaximize, move);
+            if (QMAST.containsKey(rmp))
+            {
+                denom += Math.exp(QMAST.get(rmp).getQ()/tau);
+            }
+        }
+        // If we're going to be dividing by 0, we return infinity
+        if (denom == 0)
+        {
+            return Double.POSITIVE_INFINITY;
+        }
+        RoleMovePair rmp = new RoleMovePair(roleToMaximize, a);
+        // If the denominator is not found, we treat it as infinity (limit of e^infty = infty)
+        if (!QMAST.containsKey(rmp))
+        {
+            return Double.POSITIVE_INFINITY;
+        }
+        return Math.exp(QMAST.get(rmp).getQ()/tau)/denom;
+
     }
 
 
