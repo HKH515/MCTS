@@ -34,6 +34,8 @@ public final class MCTSGamer extends StateMachineGamer
     MCTSNode currentNode;
     double explorationFactor = 50;
     SelectionHeuristic heuristic = SelectionHeuristic.UCB;
+
+    HashMap<RoleMovePair, QNPair> QMAST;
     
     int i = 0;
 
@@ -50,8 +52,14 @@ public final class MCTSGamer extends StateMachineGamer
         long end = timeout ;
         //System.out.println(getStateMachine());
         //if (currentNode == null)
+
+        if (QMAST == null)
         {
-            root = new MCTSNode(getStateMachine(), getCurrentState(), null, null);
+            QMAST = new HashMap<>();
+        }
+
+        {
+            root = new MCTSNode(getStateMachine(), getCurrentState(), null, null, QMAST);
             currentNode = root;
         }
 
@@ -108,7 +116,6 @@ public final class MCTSGamer extends StateMachineGamer
             MCTSNode selectedNode = currentNode.selection(getRole(), heuristic, explorationFactor);
             List<Integer> playout = selectedNode.playout(timeout);
             selectedNode.parent.backprop(playout, selectedNode.getPrevAction(), timeout);
-            //selectedNode.backprop(playout, timeout);
 
 
              for (RoleMovePair rmp : currentNode.roleMovePairToQ.keySet())
@@ -124,7 +131,7 @@ public final class MCTSGamer extends StateMachineGamer
                 System.out.println();
 
             }
-                i++;
+            i++;
 
         } 
         catch (TimeoutException e)
@@ -145,7 +152,7 @@ public final class MCTSGamer extends StateMachineGamer
     {
         root = null;
         currentNode = null;
-        // Random gamer does no special cleanup when the match ends normally.
+        QMAST = null;
     }
 
     @Override
