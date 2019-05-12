@@ -27,6 +27,7 @@ public class MCTSNode
 
     HashMap<RoleMovePair, Integer> roleMovePairToQ;
     HashMap<RoleMovePair, Integer> roleMovePairToN;
+    HashMap<RoleMovePair, QNPair> QMAST;
     Set<List<Move>> unexpandedJointMoves;
 
     MachineState state;
@@ -36,7 +37,8 @@ public class MCTSNode
 
     public class TimeoutException extends Exception {}
 
-    public MCTSNode(StateMachine machine, MachineState state, MCTSNode parent, List<Move> prevAction) throws MoveDefinitionException
+    public MCTSNode(StateMachine machine, MachineState state, MCTSNode parent, List<Move> prevAction, 
+        HashMap<RoleMovePair, QNPair> QMAST) throws MoveDefinitionException
     {
         this.machine = machine;
         this.state = state;
@@ -44,6 +46,7 @@ public class MCTSNode
         this.prevAction = prevAction;
         this.children = new LinkedList<>();
         this.jointMovesToChildren = new HashMap<>();
+        this.QMAST = QMAST;
         N = 0;
         roleMovePairToQ = new HashMap<>();
         roleMovePairToN = new HashMap<>();
@@ -59,7 +62,12 @@ public class MCTSNode
 
     private MCTSNode createChild(List<Move> jointMove) throws TransitionDefinitionException, MoveDefinitionException
     {
-        return new MCTSNode(machine, machine.getNextState(state, jointMove), this, jointMove);
+        return new MCTSNode(machine, machine.getNextState(state, jointMove), this, jointMove, QMAST);
+    }
+
+    public List<Move> getPrevAction()
+    {
+        return prevAction;
     }
 
     // finds a joint move that maximizes the score for a specific role.
@@ -69,6 +77,7 @@ public class MCTSNode
         List<Move> argmax = null;
         double qMax = Double.NEGATIVE_INFINITY;
 
+        System.out.println("qmast size: " + QMAST.size());
         for (List<Move> move : machine.getLegalJointMoves(state))
         {
             // make sure we have an entry in the map
@@ -193,10 +202,10 @@ public class MCTSNode
         int moveIndex = rand.nextInt(legalJointMoves.size());
         List<Move> chosenMove = legalJointMoves.get(moveIndex);
         MachineState nextState = machine.getNextState(state, chosenMove);
-        return new MCTSNode(machine, nextState, this, chosenMove).playout(timeout);
+        return new MCTSNode(machine, nextState, this, chosenMove, QMAST).playout(timeout);
     }
 
-    public void backprop(List<Integer> playoutGoals, long timeout) throws TimeoutException
+    public void backprop(List<Integer> playoutGoals, List<Move> playerMoves, long timeout) throws TimeoutException
     {
         long currentTime = System.currentTimeMillis();
 
@@ -208,7 +217,11 @@ public class MCTSNode
         for (RoleMovePair rmp : roleMovePairToQ.keySet())
         {
             // update(corresponding player's playout score, RoleMovePair for that player)
-            update(playoutGoals.get(machine.getRoleIndices().get(rmp.getRole())), rmp);
+            if (rmp.getMove().equals(playerMoves)) 
+            {
+                update(playoutGoals.get(machine.getRoleIndices().get(rmp.getRole())), rmp);
+        
+            }
         }
 
         if (parent == null)
@@ -216,7 +229,7 @@ public class MCTSNode
             return;
         }
 
-        parent.backprop(playoutGoals, timeout);
+        parent.backprop(playoutGoals, this.prevAction, timeout);
     }
 
     // The reason why we only do this for a certain move, is due to memory and time contraints, as we are
@@ -251,7 +264,7 @@ public class MCTSNode
     {
         List<Move> jointMove = getRandomJointAction();
         MachineState nextState = machine.getNextState(state, jointMove);
-        return new MCTSNode(machine, nextState, this, jointMove);
+        return new MCTSNode(machine, nextState, this, jointMove, QMAST);
     }
 
     public MCTSNode getChild(List<Move> jointMove) throws TransitionDefinitionException, MoveDefinitionException
@@ -280,10 +293,27 @@ public class MCTSNode
 
         // N(s,r,a)
         roleMovePairToN.put(rmp, currentRoleMoveN + 1);
+
+        // Update QMAST values
+        QNPair currentQMAST = QMAST.get(rmp);
+
+        if (currentQMAST == null)
+        {
+            QMAST.put(rmp, new QNPair());
+            currentQMAST = QMAST.get(rmp);
+        }
+
+        Integer qmastQ = currentQMAST.getQ();
+        Integer qmastN = currentQMAST.getN();
+
+        nextValue = qmastQ + ((playout - qmastQ)/(++qmastN));
+        
+        currentQMAST.setQ(nextValue);
+        currentQMAST.setN(qmastN);
     }
 
 
-    public static void runMCTS(MCTSNode root, Role role, SelectionHeuristic heuristic, int explorationFactor, int timeout, boolean shouldExpand) throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException, ShallowTreeException
+    /*public static void runMCTS(MCTSNode root, Role role, SelectionHeuristic heuristic, int explorationFactor, int timeout, boolean shouldExpand) throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException, ShallowTreeException
     {
         try
         {
@@ -313,11 +343,11 @@ public class MCTSNode
         {
             System.out.println("When running main function in MCTSNode, ran out of time, giving best");
         }
-    }
+    }*/
 
     public static void main(String[] args) throws Exception
     {
-        // setting up the state machine
+        /*// setting up the state machine
         String gdlFileName = "/home/hannes/Documents/reasoner/games/games/ticTacToe/ticTacToe.kif";
         String gameDescription = IOUtils.readFile(new File(gdlFileName));
         String preprocessedRules = Game.preprocessRulesheet(gameDescription);
@@ -328,11 +358,11 @@ public class MCTSNode
         Role role = (Role)stateMachine.getRoles().get(0);
         MachineState currentState = stateMachine.getInitialState();
 
-        MCTSNode root = new MCTSNode(stateMachine, currentState, null, null);
+        MCTSNode root = new MCTSNode(stateMachine, currentState, null, null, null);
 
         for (int i = 0; i < 10000; i++)
         {
             runMCTS(root, role, SelectionHeuristic.UCB, 1, 10000, true);
-        }
+        }*/
     }
 }
