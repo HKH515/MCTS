@@ -24,6 +24,7 @@ public final class BiasedMCTSGamer extends StateMachineGamer
     private MCTSNode currentNode;
     private double explorationFactor = 50;
     private SelectionHeuristic heuristic = SelectionHeuristic.UCB;
+    private ApprenticePolicy apprentice;
 
 
     @Override
@@ -35,6 +36,9 @@ public final class BiasedMCTSGamer extends StateMachineGamer
     @Override
     public Move stateMachineSelectMove(long timeout) throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException
     {
+
+        apprentice = new ApprenticePolicy(getStateMachine(), 4);
+
         long end = timeout ;
 
         {
@@ -43,6 +47,7 @@ public final class BiasedMCTSGamer extends StateMachineGamer
         }
 
         List<Move> bestActionForRole;
+
         while (System.currentTimeMillis() < end)
         {
             runMCTS(end);
@@ -50,6 +55,7 @@ public final class BiasedMCTSGamer extends StateMachineGamer
         }
 
         bestActionForRole = currentNode.getBestActionForRole(getRole(), heuristic, explorationFactor);
+        apprentice.checkersFeatureVectorForStateActionPair(getCurrentState(), bestActionForRole, getRole());
         return bestActionForRole.get(getStateMachine().getRoleIndices().get(getRole()));
     }
 
