@@ -17,6 +17,7 @@ import org.ggp.base.util.statemachine.Role;
 import org.ggp.base.util.statemachine.implementation.prover.ProverStateMachine;
 import org.ggp.base.util.statemachine.implementation.prover.query.ProverQueryBuilder;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ApprenticePolicy
@@ -28,13 +29,15 @@ public class ApprenticePolicy
 
     private List<Gdl> gameRules;
     private MachineState state;
+    private double lambda;
 
     ApprenticePolicy(StateMachine machine, int numFeatures, List<Gdl> gameRules)
     {
         this.machine = machine;
-        weights = new double[numFeatures];
         this.gameRules = gameRules;
+        lambda = 0.1;
         prover = new AimaProver(gameRules);
+        weights = new double[numFeatures];
     }
 
     public void setLearningRate(double learningRate)
@@ -109,10 +112,8 @@ public class ApprenticePolicy
         return new double[]{};
     }
 
-    private double f(MachineState state, List<Move> moves, Role role)
+    private double f(double[] featureVector)
     {
-        double[] featureVector = breakthroughFeatureVectorForStateActionPair(state, moves, role);
-
         int length = featureVector.length;
 
         double sum = 0;
@@ -125,16 +126,14 @@ public class ApprenticePolicy
         return sum;
     }
 
-    private double[] computeProbabilities(MachineState state, Role role) throws Exception
+    private double[] computeProbabilities(MachineState state, List<List<Move>> legalMoves, List<double[]> featureVectors)
     {
-        List<List<Move>> legalMoves = machine.getLegalJointMoves(state);
         int size = legalMoves.size();
         double[] exponents = new double[size];
-        int idx = 0;
 
-        for (List<Move> playerMoves : legalMoves)
+        for (int i = 0; i < legalMoves.size(); ++i)
         {
-            exponents[idx++] = Math.exp(f(state, playerMoves, role));
+            exponents[i] = Math.exp(f(featureVectors.get(i)));
         }
 
         double expSum = 0.0;
@@ -152,9 +151,38 @@ public class ApprenticePolicy
         return probabilities;
     }
 
-    public void doGradientDescentUpdate(MCTSNode node)
+    public void doGradientDescentUpdate(MCTSNode node, Role role) throws Exception
     {
-        
+        List<List<Move>> legalMoves = machine.getLegalJointMoves(node.getState());
+        double[] expertProbabilities = new double[legalMoves.size()];
+        int idx = 0;
+
+        List<double[]> featureVectors = new ArrayList<>();
+
+        for (List<Move> legalMove : legalMoves)
+        {
+            double[] featureVector = breakthroughFeatureVectorForStateActionPair(state, legalMove, role);
+            featureVectors.add(featureVector);
+            expertProbabilities[idx++] = node.getActionProbability(legalMove, role);
+        }
+
+        double[] moveProbabilities = computeProbabilities(node.getState(), legalMoves, featureVectors);
+
+        int numFeatures = weights.length;
+
+        double[] updateValues = new double[numFeatures];
+
+        for (int i = 0; i < numFeatures; ++i)
+        {
+            updateValues[i] += moveProbabilities[i] - expertProbabilities[i];
+        }
+
+        for (int i = 0; i < numFeatures; ++i)
+        {
+            updateValues[i] -= learningRate * lambda * weights[i];
+            updateValues[i] *= learningRate;
+            weights[i] -= updateValues[i];
+        }
     }
 
 }
