@@ -17,6 +17,7 @@ import org.ggp.base.util.statemachine.Role;
 import org.ggp.base.util.statemachine.implementation.prover.ProverStateMachine;
 import org.ggp.base.util.statemachine.implementation.prover.query.ProverQueryBuilder;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class ApprenticePolicy
@@ -24,15 +25,24 @@ public class ApprenticePolicy
     private double[] weights;
     private StateMachine machine;
     private Prover prover;
+    private double learningRate;
+
     private List<Gdl> gameRules;
     private MachineState state;
+    private double lambda;
 
-    public ApprenticePolicy(StateMachine machine, int numFeatures, List<Gdl> gameRules)
+    ApprenticePolicy(StateMachine machine, int numFeatures, List<Gdl> gameRules)
     {
         this.machine = machine;
-        weights = new double[numFeatures];
         this.gameRules = gameRules;
+        lambda = 0.1;
         prover = new AimaProver(gameRules);
+        weights = new double[numFeatures];
+    }
+
+    public void setLearningRate(double learningRate)
+    {
+        this.learningRate = learningRate;
     }
 
     private GdlRelation breakthroughIsCellOwnedByRoleRelation(Gdl x, Gdl y, Role p)
@@ -64,7 +74,7 @@ public class ApprenticePolicy
         System.out.println("x: " + x);
         System.out.println("y: " + y);
 
-        if (p.equals("white"))
+        if (p.toString().equals("white"))
         {
             return (y.toString().equals("8"));
         }
@@ -108,7 +118,7 @@ public class ApprenticePolicy
         }
     }
 
-    public double[] breakthroughFeatureVectorForStateActionPair(MachineState state, List<Move> move, Role role)
+    double[] breakthroughFeatureVectorForStateActionPair(MachineState state, List<Move> move, Role role)
     {
         double[] featureVector = new double[4];
 
@@ -157,5 +167,77 @@ public class ApprenticePolicy
         return featureVector;
     }
 
+    private double f(double[] featureVector)
+    {
+        int length = featureVector.length;
+
+        double sum = 0;
+
+        for (int i = 0; i < length; ++i)
+        {
+            sum += featureVector[i] * weights[i];
+        }
+
+        return sum;
+    }
+
+    private double[] computeProbabilities(MachineState state, List<List<Move>> legalMoves, List<double[]> featureVectors)
+    {
+        int size = legalMoves.size();
+        double[] exponents = new double[size];
+
+        for (int i = 0; i < legalMoves.size(); ++i)
+        {
+            exponents[i] = Math.exp(f(featureVectors.get(i)));
+        }
+
+        double expSum = 0.0;
+        for (double exp : exponents)
+        {
+            expSum += exp;
+        }
+
+        double[] probabilities = new double[size];
+        for (int i = 0; i < size; ++i)
+        {
+            probabilities[i] = exponents[i]/expSum;
+        }
+
+        return probabilities;
+    }
+
+    public void doGradientDescentUpdate(MCTSNode node, Role role) throws Exception
+    {
+        List<List<Move>> legalMoves = machine.getLegalJointMoves(node.getState());
+        double[] expertProbabilities = new double[legalMoves.size()];
+        int idx = 0;
+
+        List<double[]> featureVectors = new ArrayList<>();
+
+        for (List<Move> legalMove : legalMoves)
+        {
+            double[] featureVector = breakthroughFeatureVectorForStateActionPair(state, legalMove, role);
+            featureVectors.add(featureVector);
+            expertProbabilities[idx++] = node.getActionProbability(legalMove, role);
+        }
+
+        double[] moveProbabilities = computeProbabilities(node.getState(), legalMoves, featureVectors);
+
+        int numFeatures = weights.length;
+
+        double[] updateValues = new double[numFeatures];
+
+        for (int i = 0; i < numFeatures; ++i)
+        {
+            updateValues[i] += moveProbabilities[i] - expertProbabilities[i];
+        }
+
+        for (int i = 0; i < numFeatures; ++i)
+        {
+            updateValues[i] -= learningRate * lambda * weights[i];
+            updateValues[i] *= learningRate;
+            weights[i] -= updateValues[i];
+        }
+    }
 
 }
