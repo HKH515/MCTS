@@ -41,7 +41,7 @@ public class ApprenticePolicy
         return GdlPool.getRelation(GdlPool.TRUE,
                 new GdlTerm[] {
                         GdlPool.getFunction(
-                                GdlPool.getConstant("cell"),
+                                GdlPool.getConstant("cellHolds"),
                                 new GdlTerm[] {
                                         GdlPool.getConstant(x.toString()),
                                         GdlPool.getConstant(y.toString()),
@@ -53,7 +53,10 @@ public class ApprenticePolicy
 
     private boolean isCellOwnedByP(MachineState state, Gdl x, Gdl y, Role p)
     {
-        return prover.prove(isCellOwnedByPRelation(x, y, p), state.getContents());
+        GdlRelation rel = isCellOwnedByPRelation(x, y, p);
+        System.out.println(rel);
+        System.out.println("relation is " + prover.prove(rel, state.getContents()));
+        return prover.prove(rel, state.getContents());
     }
 
     public double[] breakthroughFeatureVectorForStateActionPair(MachineState state, List<Move> move, Role role)
@@ -76,6 +79,8 @@ public class ApprenticePolicy
             System.out.println("rmcfBody: " + rmcfBody);
             GdlTerm destX = rmcfBody.get(2);
             GdlTerm destY = rmcfBody.get(3);
+            System.out.println("destX: " + destX);
+            System.out.println("destY: " + destY);
             if (rmcfName.toString().equals("move") && isCellOwnedByP(state, destX, destY, enemyRole))
             {
                 System.out.println("capture");
