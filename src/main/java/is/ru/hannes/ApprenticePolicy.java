@@ -120,7 +120,7 @@ public class ApprenticePolicy
 
     double[] breakthroughFeatureVectorForStateActionPair(MachineState state, List<Move> move, Role role)
     {
-        double[] featureVector = new double[4];
+        double[] featureVector = new double[3];
 
         // if our role is 0, enemyRole is 1, and vice versa
         Role enemyRole = machine.getRoles().get((machine.getRoleIndices().get(role) + 1) % 2);
