@@ -35,7 +35,7 @@ public class ApprenticePolicy
         prover = new AimaProver(gameRules);
     }
 
-    private GdlRelation isCellOwnedByPRelation(Gdl x, Gdl y, Role p)
+    private GdlRelation breakthroughIsCellOwnedByRoleRelation(Gdl x, Gdl y, Role p)
     {
 
         return GdlPool.getRelation(GdlPool.TRUE,
@@ -51,12 +51,61 @@ public class ApprenticePolicy
                 });
     }
 
-    private boolean isCellOwnedByP(MachineState state, Gdl x, Gdl y, Role p)
+    private boolean breakthroughIsCellOwnedByRole(MachineState state, Gdl x, Gdl y, Role p)
     {
-        GdlRelation rel = isCellOwnedByPRelation(x, y, p);
+        GdlRelation rel = breakthroughIsCellOwnedByRoleRelation(x, y, p);
         System.out.println(rel);
         System.out.println("relation is " + prover.prove(rel, state.getContents()));
         return prover.prove(rel, state.getContents());
+    }
+
+    private boolean breakthroughIsCellOnEdge(MachineState state, Gdl x, Gdl y, Role p)
+    {
+        System.out.println("x: " + x);
+        System.out.println("y: " + y);
+
+        if (p.equals("white"))
+        {
+            return (y.toString().equals("8"));
+        }
+        else
+        {
+            return (y.toString().equals("1"));
+        }
+    }
+
+    private boolean areBottomDiagonalsP(MachineState state, Gdl x, Gdl y, Role p)
+    {
+        Gdl xMinus1 = GdlPool.getConstant(String.valueOf(Integer.parseInt(x.toString()) - 1));
+        Gdl xPlus1 = GdlPool.getConstant(String.valueOf(Integer.parseInt(x.toString()) + 1));
+        Gdl yPlus1 = GdlPool.getConstant(String.valueOf(Integer.parseInt(y.toString()) + 1));
+        System.out.println("x - 1: " + xMinus1);
+        System.out.println("x + 1: " + xPlus1);
+        System.out.println("y + 1: " + yPlus1);
+        return breakthroughIsCellOwnedByRole(state, xMinus1, yPlus1, p) || breakthroughIsCellOwnedByRole(state, xPlus1, yPlus1, p);
+    }
+
+    private boolean areTopDiagonalsP(MachineState state, Gdl x, Gdl y, Role p)
+    {
+        Gdl xMinus1 = GdlPool.getConstant(String.valueOf(Integer.parseInt(x.toString()) - 1));
+        Gdl xPlus1 = GdlPool.getConstant(String.valueOf(Integer.parseInt(x.toString()) + 1));
+        Gdl yMinus1 = GdlPool.getConstant(String.valueOf(Integer.parseInt(y.toString()) - 1));
+        System.out.println("x - 1: " + xMinus1);
+        System.out.println("x + 1: " + xPlus1);
+        System.out.println("y - 1: " + yMinus1);
+        return breakthroughIsCellOwnedByRole(state, xMinus1, yMinus1, p) || breakthroughIsCellOwnedByRole(state, xPlus1, yMinus1, p);
+    }
+
+    private boolean breakthroughIsCellAttackableByRole(MachineState state, Gdl x, Gdl y, Role myRole, Role enemyRole)
+    {
+        if (myRole.equals("white"))
+        {
+            return areBottomDiagonalsP(state, x, y, enemyRole);
+        }
+        else
+        {
+            return areTopDiagonalsP(state, x, y, enemyRole);
+        }
     }
 
     public double[] breakthroughFeatureVectorForStateActionPair(MachineState state, List<Move> move, Role role)
@@ -70,36 +119,42 @@ public class ApprenticePolicy
 
         System.out.println("inside checkersFeatureVectorForStateActionPair");
         System.out.println("roleMoveContents instanceof GdlFunction: " + (roleMoveContents instanceof  GdlFunction));
-        // Capturing
         if (roleMoveContents instanceof GdlFunction)
         {
+            // Capturing
             GdlFunction roleMoveContentsFunc = ((GdlFunction)roleMoveContents);
             GdlTerm rmcfName = roleMoveContentsFunc.getName();
             List<GdlTerm> rmcfBody = roleMoveContentsFunc.getBody();
-            System.out.println("rmcfBody: " + rmcfBody);
             GdlTerm destX = rmcfBody.get(2);
             GdlTerm destY = rmcfBody.get(3);
-            System.out.println("destX: " + destX);
-            System.out.println("destY: " + destY);
-            if (rmcfName.toString().equals("move") && isCellOwnedByP(state, destX, destY, enemyRole))
+            if (rmcfName.toString().equals("move") && breakthroughIsCellOwnedByRole(state, destX, destY, enemyRole))
             {
-                System.out.println("capture");
                 featureVector[0] = 1.0;
             }
+
+            // Is going to win
+            if (rmcfName.toString().equals("move") && breakthroughIsCellOnEdge(state, destX, destY, role))
+            {
+                System.out.println("feature for victory is set");
+                featureVector[1] = 1.0;
+            }
+
+            if (rmcfName.toString().equals("move") && breakthroughIsCellAttackableByRole(state, destX, destY, role, enemyRole))
+            {
+                featureVector[2] = 1.0;
+            }
         }
+
+
+        // Can be captured
+
 
         System.out.println("feature vector:");
         for (int i = 0; i < 4; i++)
         {
             System.out.println(featureVector[i]);
         }
-
-        // Promotion
-        // Multi-capture 
-        // Can be captured 
-
-
-        return new double[]{};
+        return featureVector;
     }
 
 
