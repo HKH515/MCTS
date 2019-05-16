@@ -16,6 +16,7 @@ import is.ru.cadia.ggp.propnet.bitsetstate.RecursiveForwardChangePropNetStateMac
 import is.ru.cadia.ggp.propnet.structure.GGPBasePropNetStructureFactory;
 
 import org.ggp.base.util.statemachine.Move;
+import org.ggp.base.util.statemachine.implementation.prover.query.ProverQueryBuilder;
 
 public final class BiasedMCTSGamer extends StateMachineGamer
 {
@@ -37,7 +38,7 @@ public final class BiasedMCTSGamer extends StateMachineGamer
     public Move stateMachineSelectMove(long timeout) throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException
     {
 
-        apprentice = new ApprenticePolicy(getStateMachine(), 4);
+        apprentice = new ApprenticePolicy(getStateMachine(), 4, getMatch().getGame().getRules());
 
         long end = timeout ;
 
@@ -55,7 +56,7 @@ public final class BiasedMCTSGamer extends StateMachineGamer
         }
 
         bestActionForRole = currentNode.getBestActionForRole(getRole(), heuristic, explorationFactor);
-        apprentice.checkersFeatureVectorForStateActionPair(getCurrentState(), bestActionForRole, getRole());
+        apprentice.breakthroughFeatureVectorForStateActionPair(getCurrentState(), bestActionForRole, getRole());
         return bestActionForRole.get(getStateMachine().getRoleIndices().get(getRole()));
     }
 
