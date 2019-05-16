@@ -21,24 +21,24 @@ import org.ggp.base.util.statemachine.exceptions.TransitionDefinitionException;
 public class MCTSNode 
 {
     List<MCTSNode> children;
-    HashMap<List<Move>, MCTSNode> jointMovesToChildren;
+    private HashMap<List<Move>, MCTSNode> jointMovesToChildren;
 
-    int N;
+    private int N;
 
-    HashMap<RoleMovePair, Integer> roleMovePairToQ;
-    HashMap<RoleMovePair, Integer> roleMovePairToN;
-    HashMap<RoleMovePair, QNPair> QMAST;
-    Set<List<Move>> unexpandedJointMoves;
+    private HashMap<RoleMovePair, Integer> roleMovePairToQ;
+    private HashMap<RoleMovePair, Integer> roleMovePairToN;
+    private HashMap<RoleMovePair, QNPair> QMAST;
+    private Set<List<Move>> unexpandedJointMoves;
 
-    MachineState state;
-    StateMachine machine;
+    private MachineState state;
+    private StateMachine machine;
     MCTSNode parent;
-    List<Move> prevAction;
-    boolean useQMAST;
+    private List<Move> prevAction;
+    private boolean useQMAST;
 
-    public class TimeoutException extends Exception {}
+    class TimeoutException extends Exception {}
 
-    public MCTSNode(StateMachine machine, MachineState state, MCTSNode parent, List<Move> prevAction, 
+    MCTSNode(StateMachine machine, MachineState state, MCTSNode parent, List<Move> prevAction,
         HashMap<RoleMovePair, QNPair> QMAST, boolean useQMAST) throws MoveDefinitionException
     {
         this.machine = machine;
@@ -56,6 +56,20 @@ public class MCTSNode
         //unexpandedJointMoves = machine.getLegalJointMoves(state);
         unexpandedJointMoves = null;
     }
+
+    Double getActionProbability(List<Move> action, Role role)
+    {   
+        RoleMovePair rmp = new RoleMovePair(role, action);
+
+        Integer visits = roleMovePairToN.get(rmp);
+
+        if (visits == null)
+        {
+            return 0.0;
+        }
+        
+        return visits / Double.valueOf(N);
+    }
     
     private void addChild(MCTSNode node) throws TransitionDefinitionException, MoveDefinitionException
     {
@@ -67,14 +81,14 @@ public class MCTSNode
         return new MCTSNode(machine, machine.getNextState(state, jointMove), this, jointMove, QMAST, useQMAST);
     }
 
-    public List<Move> getPrevAction()
+    List<Move> getPrevAction()
     {
         return prevAction;
     }
 
     // finds a joint move that maximizes the score for a specific role.
     // returns a list of moves, an example is [noop, noop, noop, move a 3 b 4, noop, noop]
-    public List<Move> getBestActionForRole(Role role, SelectionHeuristic heuristic, double explorationFactor) throws MoveDefinitionException
+    List<Move> getBestActionForRole(Role role, SelectionHeuristic heuristic, double explorationFactor) throws MoveDefinitionException
     {
         List<Move> argmax = null;
         double qMax = Double.NEGATIVE_INFINITY;
@@ -114,7 +128,7 @@ public class MCTSNode
     }
 
 
-    public double ucbHeuristic(int qValue, int nValue, int nOfNode, double c)
+    private double ucbHeuristic(int qValue, int nValue, int nOfNode, double c)
     {
         if (nValue == 0)
         {
@@ -122,6 +136,16 @@ public class MCTSNode
         }
         //System.out.println("Math.sqrt(Math.log(" + nOfNode + ")/" + nValue + ")))" + " = " + Math.sqrt(Math.log(nOfNode)/nValue));
         return qValue + (c * Math.sqrt(Math.log(nOfNode)/nValue));
+    }
+
+    private double biasedUCBHeuristic(int qValue, int nValue, int nOfNode, double c, double p)
+    {
+        if (nValue == 0)
+        {
+            return Integer.MAX_VALUE;
+        }
+
+        return qValue + (c * p * Math.sqrt(Math.log(nOfNode)/nValue));
     }
 
     public MCTSNode selection(Role role, SelectionHeuristic heuristic, double explorationFactor, boolean shouldExpand) throws TransitionDefinitionException, MoveDefinitionException
@@ -165,7 +189,7 @@ public class MCTSNode
     * that results from doing that move from the current state.
     * Returns the newly created child node.
      */
-    public MCTSNode expand(List<Move> randomJointMove) throws MoveDefinitionException, TransitionDefinitionException
+    private MCTSNode expand(List<Move> randomJointMove) throws MoveDefinitionException, TransitionDefinitionException
     {
         assert (randomJointMove != null);
         if (machine.isTerminal(state))
@@ -184,7 +208,7 @@ public class MCTSNode
         return child;
     }
 
-    public List<Integer> playout(long timeout, Role roleToMaximize) throws TimeoutException, GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException
+    List<Integer> playout(long timeout, Role roleToMaximize) throws TimeoutException, GoalDefinitionException, MoveDefinitionException, TransitionDefinitionException
     {
         long currentTime = System.currentTimeMillis();
 
@@ -215,7 +239,7 @@ public class MCTSNode
         return new MCTSNode(machine, nextState, this, chosenMove, QMAST, useQMAST).playout(timeout, roleToMaximize);
     }
 
-    public void backprop(List<Integer> playoutGoals, List<Move> playerMoves, long timeout) throws TimeoutException
+    void backprop(List<Integer> playoutGoals, List<Move> playerMoves, long timeout) throws TimeoutException
     {
         long currentTime = System.currentTimeMillis();
 
@@ -230,7 +254,6 @@ public class MCTSNode
             if (rmp.getMove().equals(playerMoves)) 
             {
                 update(playoutGoals.get(machine.getRoleIndices().get(rmp.getRole())), rmp);
-        
             }
         }
 
@@ -245,7 +268,7 @@ public class MCTSNode
     // The reason why we only do this for a certain move, is due to memory and time contraints, as we are
     // backpropping we only want to update the path up to the root, not the set of children belonging to
     // every node on the path.
-    public void initMapsForMove(List<Move> move)
+    private void initMapsForMove(List<Move> move)
     {
         for (Role role : machine.getRoles())
         {
@@ -263,11 +286,9 @@ public class MCTSNode
 
     }
 
-    public List<Move> getRandomJointAction() throws MoveDefinitionException
+    private List<Move> getRandomJointAction() throws MoveDefinitionException
     {
-        Random rand = new Random();
-        List<Move> chosenJointMove = machine.getRandomJointMove(state);
-        return chosenJointMove;
+        return machine.getRandomJointMove(state);
     }
 
     public MCTSNode getRandomChild() throws MoveDefinitionException, TransitionDefinitionException
@@ -277,7 +298,7 @@ public class MCTSNode
         return new MCTSNode(machine, nextState, this, jointMove, QMAST, useQMAST);
     }
 
-    public MCTSNode getChild(List<Move> jointMove) throws TransitionDefinitionException, MoveDefinitionException
+    private MCTSNode getChild(List<Move> jointMove) throws TransitionDefinitionException, MoveDefinitionException
     {
         if (jointMovesToChildren.containsKey(jointMove))
         {
@@ -325,7 +346,7 @@ public class MCTSNode
         }
     }
 
-    public List<Move> getMostLikelyMoveGibbs(List<List<Move>> moves, Role roleToMaximize)
+    private List<Move> getMostLikelyMoveGibbs(List<List<Move>> moves, Role roleToMaximize)
     {
         List<Move> argMax = null;
         double max = Double.NEGATIVE_INFINITY;
@@ -343,7 +364,12 @@ public class MCTSNode
 
     }
 
-    public double gibbs(List<List<Move>> moves, List<Move> a, Role roleToMaximize, double tau)
+    public MachineState getState()
+    {
+        return state;
+    }
+
+    double gibbs(List<List<Move>> moves, List<Move> a, Role roleToMaximize, double tau)
     {
         double denom = 0;
         for (List<Move> move : moves)
@@ -366,60 +392,12 @@ public class MCTSNode
             return Double.POSITIVE_INFINITY;
         }
         return Math.exp(QMAST.get(rmp).getQ()/tau)/denom;
-
     }
 
 
-    /*public static void runMCTS(MCTSNode root, Role role, SelectionHeuristic heuristic, int explorationFactor, int timeout, boolean shouldExpand) throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException, ShallowTreeException
-    {
-        try
-        {
-            MCTSNode selectedNode = root.selection(role, heuristic, explorationFactor, shouldExpand);
-            List<Integer> playout = selectedNode.playout(timeout);
-
-            if (selectedNode.parent != null)
-            {
-                selectedNode.parent.backprop(playout, timeout);
-                //selectedNode.backprop(playout, timeout);
-            }
-            else
-            {
-                throw new ShallowTreeException();
-            }
-
-
-            for (RoleMovePair rmp : root.roleMovePairToQ.keySet())
-            {
-                if (rmp.getRole().equals(role))
-                {
-                    System.out.println("action/Q for root: " + rmp.getMove() + " for role " + rmp.getRole() + " for root: " + root.roleMovePairToQ.get(rmp));
-                }
-            }
-        }
-        catch (TimeoutException e)
-        {
-            System.out.println("When running main function in MCTSNode, ran out of time, giving best");
-        }
-    }*/
 
     public static void main(String[] args) throws Exception
     {
-        /*// setting up the state machine
-        String gdlFileName = "/home/hannes/Documents/reasoner/games/games/ticTacToe/ticTacToe.kif";
-        String gameDescription = IOUtils.readFile(new File(gdlFileName));
-        String preprocessedRules = Game.preprocessRulesheet(gameDescription);
-        Game ggpBaseGame = Game.createEphemeralGame(preprocessedRules);
-        PropNetStateMachine stateMachine = new RecursiveForwardChangePropNetStateMachine(new GGPBasePropNetStructureFactory()); // insert your own machine here
-        stateMachine.initialize(ggpBaseGame.getRules());
 
-        Role role = (Role)stateMachine.getRoles().get(0);
-        MachineState currentState = stateMachine.getInitialState();
-
-        MCTSNode root = new MCTSNode(stateMachine, currentState, null, null, null);
-
-        for (int i = 0; i < 10000; i++)
-        {
-            runMCTS(root, role, SelectionHeuristic.UCB, 1, 10000, true);
-        }*/
     }
 }

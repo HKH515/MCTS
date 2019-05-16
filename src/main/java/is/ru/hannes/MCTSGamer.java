@@ -119,23 +119,6 @@ public final class MCTSGamer extends StateMachineGamer
             List<Integer> playout = selectedNode.playout(timeout, getRole());
             selectedNode.parent.backprop(playout, selectedNode.getPrevAction(), timeout);
 
-
-
-             /*for (RoleMovePair rmp : currentNode.roleMovePairToQ.keySet())
-             {
-                 if (i % 2000 == 0 && rmp.getRole().equals(getRole()))
-                 {
-                     //System.out.println("action/Q for root: " + rmp.getMove() + " for role " + rmp.getRole() + " for root: " + currentNode.roleMovePairToQ.get(rmp));
-                 }
-            }
-            if (i % 2000 == 0)
-            {
-                //System.out.println("Tree depth: " + depth(currentNode));
-                //System.out.println();
-
-            }
-            i++;*/
-
         } 
         catch (TimeoutException e)
         {
