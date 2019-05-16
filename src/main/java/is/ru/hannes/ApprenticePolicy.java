@@ -149,6 +149,7 @@ public class ApprenticePolicy
                 featureVector[1] = 1.0;
             }
 
+            // Can be captured
             if (rmcfName.toString().equals("move") && breakthroughIsCellAttackableByRole(state, destX, destY, role, enemyRole))
             {
                 featureVector[2] = 1.0;
@@ -156,7 +157,6 @@ public class ApprenticePolicy
         }
 
 
-        // Can be captured
 
 
         System.out.println("feature vector:");
