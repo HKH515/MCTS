@@ -16,7 +16,6 @@ import is.ru.cadia.ggp.propnet.bitsetstate.RecursiveForwardChangePropNetStateMac
 import is.ru.cadia.ggp.propnet.structure.GGPBasePropNetStructureFactory;
 
 import org.ggp.base.util.statemachine.Move;
-import org.ggp.base.util.statemachine.implementation.prover.query.ProverQueryBuilder;
 
 public final class BiasedMCTSGamer extends StateMachineGamer
 {
@@ -24,7 +23,7 @@ public final class BiasedMCTSGamer extends StateMachineGamer
     private MCTSNode root;
     private MCTSNode currentNode;
     private double explorationFactor = 50;
-    private SelectionHeuristic heuristic = SelectionHeuristic.UCB;
+    private SelectionHeuristic heuristic = SelectionHeuristic.BiasedUCB;
     private ApprenticePolicy apprentice;
 
 
@@ -37,22 +36,29 @@ public final class BiasedMCTSGamer extends StateMachineGamer
     @Override
     public Move stateMachineSelectMove(long timeout) throws TransitionDefinitionException, MoveDefinitionException, GoalDefinitionException
     {
+        if (apprentice == null)
+        {
+            apprentice = new ApprenticePolicy(getStateMachine(), 4, getMatch().getGame().getRules());
+        }
 
-        apprentice = new ApprenticePolicy(getStateMachine(), 4, getMatch().getGame().getRules());
-
-        long end = timeout ;
+        long end = timeout - 50;
 
         {
-            root = new MCTSNode(getStateMachine(), getCurrentState(), null, null, null, false);
+            root = new MCTSNode(getStateMachine(), getCurrentState(), null, null, null, false, apprentice);
             currentNode = root;
         }
 
         List<Move> bestActionForRole;
 
+        int iteration = 0;
+
         while (System.currentTimeMillis() < end)
         {
             runMCTS(end);
-            //bestActionForRole = currentNode.getBestActionForRole(getRole(), heuristic, explorationFactor);
+            if (iteration++ % 20 == 0)
+            {
+                apprentice.doGradientDescentUpdate(currentNode, getRole(), currentNode.getCachedFeature());
+            }
         }
 
         bestActionForRole = currentNode.getBestActionForRole(getRole(), heuristic, explorationFactor);
@@ -73,7 +79,7 @@ public final class BiasedMCTSGamer extends StateMachineGamer
     }
 
 
-    public int depth(MCTSNode node)
+    private int depth(MCTSNode node)
     {
         if (node.children.isEmpty())
         {

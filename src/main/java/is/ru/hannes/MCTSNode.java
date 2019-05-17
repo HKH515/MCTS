@@ -28,10 +28,12 @@ public class MCTSNode
     private HashMap<RoleMovePair, Integer> roleMovePairToQ;
     private HashMap<RoleMovePair, Integer> roleMovePairToN;
     private HashMap<RoleMovePair, QNPair> QMAST;
+    private HashMap<RoleMovePair, double[]> roleMovePairToFeature;
     private Set<List<Move>> unexpandedJointMoves;
 
     private MachineState state;
     private StateMachine machine;
+    private ApprenticePolicy apprentice;
     MCTSNode parent;
     private List<Move> prevAction;
     private boolean useQMAST;
@@ -39,7 +41,7 @@ public class MCTSNode
     class TimeoutException extends Exception {}
 
     MCTSNode(StateMachine machine, MachineState state, MCTSNode parent, List<Move> prevAction,
-        HashMap<RoleMovePair, QNPair> QMAST, boolean useQMAST) throws MoveDefinitionException
+        HashMap<RoleMovePair, QNPair> QMAST, boolean useQMAST, ApprenticePolicy apprentice)
     {
         this.machine = machine;
         this.state = state;
@@ -47,6 +49,7 @@ public class MCTSNode
         this.prevAction = prevAction;
         this.children = new LinkedList<>();
         this.jointMovesToChildren = new HashMap<>();
+        this.roleMovePairToFeature = new HashMap<>();
         this.QMAST = QMAST;
         this.useQMAST = useQMAST;
         N = 0;
@@ -55,6 +58,12 @@ public class MCTSNode
 
         //unexpandedJointMoves = machine.getLegalJointMoves(state);
         unexpandedJointMoves = null;
+        this.apprentice = apprentice;
+    }
+
+    HashMap<RoleMovePair, double[]> getCachedFeature()
+    {
+        return roleMovePairToFeature;
     }
 
     Double getActionProbability(List<Move> action, Role role)
@@ -78,7 +87,7 @@ public class MCTSNode
 
     private MCTSNode createChild(List<Move> jointMove) throws TransitionDefinitionException, MoveDefinitionException
     {
-        return new MCTSNode(machine, machine.getNextState(state, jointMove), this, jointMove, QMAST, useQMAST);
+        return new MCTSNode(machine, machine.getNextState(state, jointMove), this, jointMove, QMAST, useQMAST, apprentice);
     }
 
     List<Move> getPrevAction()
@@ -93,25 +102,54 @@ public class MCTSNode
         List<Move> argmax = null;
         double qMax = Double.NEGATIVE_INFINITY;
 
-        for (List<Move> move : machine.getLegalJointMoves(state))
+        List<List<Move>> legalJointMoves = machine.getLegalJointMoves(state);
+
+        for (List<Move> move : legalJointMoves)
         {
             // make sure we have an entry in the map
             initMapsForMove(move);
             RoleMovePair rmp = new RoleMovePair(role, move);
 
-            //System.out.println("move: " + move + " for role " + role + " has been accessed " + N + " times");
             if (rmp.getRole().equals(role))
             {
                 if (heuristic.equals(SelectionHeuristic.UCB))
                 {
                     double ucbValue = ucbHeuristic(roleMovePairToQ.get(rmp), roleMovePairToN.get(rmp), N, explorationFactor);
-                    //System.out.println("move " + move + "has ucb: " + ucbValue);
                     if (ucbValue > qMax)
                     {
                         qMax = ucbValue;
                         argmax = rmp.getMove();
                     }
+                }
 
+                if (heuristic.equals(SelectionHeuristic.BiasedUCB))
+                {
+                    // We need all the feature vectors here..
+                    List<double[]> featureVectors = new ArrayList<>();
+                    for (List<Move> m : legalJointMoves)
+                    {
+                        RoleMovePair roleMovePair = new RoleMovePair(role, m);
+
+                        // check for cached feature vector and otherwise make apprentice compute it
+                        double[] featureVector = roleMovePairToFeature.get(roleMovePair);
+                        if (featureVector == null)
+                        {
+                            featureVector = apprentice.computeFeatureVector(getState(), move, role);
+                            featureVectors.add(featureVector);
+                            roleMovePairToFeature.put(roleMovePair, featureVector);
+                        }
+                    }
+
+                    // then compute p with the feature vectors
+                    double[] p = apprentice.computeProbabilities(legalJointMoves, featureVectors);
+
+                    double ucbValue = biasedUCBHeuristic(roleMovePairToQ.get(rmp), roleMovePairToN.get(rmp), N, explorationFactor, p[legalJointMoves.indexOf(move)]);
+
+                    if (ucbValue > qMax)
+                    {
+                        qMax = ucbValue;
+                        argmax = rmp.getMove();
+                    }
                 }
             }
         }
@@ -236,7 +274,7 @@ public class MCTSNode
         }
         List<Move> chosenMove = legalJointMoves.get(moveIndex);
         MachineState nextState = machine.getNextState(state, chosenMove);
-        return new MCTSNode(machine, nextState, this, chosenMove, QMAST, useQMAST).playout(timeout, roleToMaximize);
+        return new MCTSNode(machine, nextState, this, chosenMove, QMAST, useQMAST, apprentice).playout(timeout, roleToMaximize);
     }
 
     void backprop(List<Integer> playoutGoals, List<Move> playerMoves, long timeout) throws TimeoutException
@@ -295,7 +333,7 @@ public class MCTSNode
     {
         List<Move> jointMove = getRandomJointAction();
         MachineState nextState = machine.getNextState(state, jointMove);
-        return new MCTSNode(machine, nextState, this, jointMove, QMAST, useQMAST);
+        return new MCTSNode(machine, nextState, this, jointMove, QMAST, useQMAST, apprentice);
     }
 
     private MCTSNode getChild(List<Move> jointMove) throws TransitionDefinitionException, MoveDefinitionException

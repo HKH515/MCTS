@@ -14,10 +14,12 @@ import org.ggp.base.util.statemachine.MachineState;
 
 import org.ggp.base.util.statemachine.Move;
 import org.ggp.base.util.statemachine.Role;
+import org.ggp.base.util.statemachine.exceptions.MoveDefinitionException;
 import org.ggp.base.util.statemachine.implementation.prover.ProverStateMachine;
 import org.ggp.base.util.statemachine.implementation.prover.query.ProverQueryBuilder;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class ApprenticePolicy
@@ -28,7 +30,6 @@ public class ApprenticePolicy
     private double learningRate;
 
     private List<Gdl> gameRules;
-    private MachineState state;
     private double lambda;
 
     ApprenticePolicy(StateMachine machine, int numFeatures, List<Gdl> gameRules)
@@ -181,7 +182,7 @@ public class ApprenticePolicy
         return sum;
     }
 
-    private double[] computeProbabilities(MachineState state, List<List<Move>> legalMoves, List<double[]> featureVectors)
+    double[] computeProbabilities(List<List<Move>> legalMoves, List<double[]> featureVectors)
     {
         int size = legalMoves.size();
         double[] exponents = new double[size];
@@ -206,7 +207,12 @@ public class ApprenticePolicy
         return probabilities;
     }
 
-    public void doGradientDescentUpdate(MCTSNode node, Role role) throws Exception
+    double[] computeFeatureVector(MachineState state, List<Move> move, Role role)
+    {
+        return breakthroughFeatureVectorForStateActionPair(state, move, role);
+    }
+
+    void doGradientDescentUpdate(MCTSNode node, Role role, HashMap<RoleMovePair, double[]> cachedFeatures) throws MoveDefinitionException
     {
         List<List<Move>> legalMoves = machine.getLegalJointMoves(node.getState());
         double[] expertProbabilities = new double[legalMoves.size()];
@@ -216,12 +222,19 @@ public class ApprenticePolicy
 
         for (List<Move> legalMove : legalMoves)
         {
-            double[] featureVector = breakthroughFeatureVectorForStateActionPair(state, legalMove, role);
+            RoleMovePair rmp = new RoleMovePair(role, legalMove);
+            double[] featureVector = cachedFeatures.get(rmp);
+
+            if (featureVector == null)
+            {
+                featureVector = breakthroughFeatureVectorForStateActionPair(node.getState(), legalMove, role);
+            }
+
             featureVectors.add(featureVector);
             expertProbabilities[idx++] = node.getActionProbability(legalMove, role);
         }
 
-        double[] moveProbabilities = computeProbabilities(node.getState(), legalMoves, featureVectors);
+        double[] moveProbabilities = computeProbabilities(legalMoves, featureVectors);
 
         int numFeatures = weights.length;
 

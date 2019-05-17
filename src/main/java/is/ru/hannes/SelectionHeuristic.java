@@ -1,5 +1,7 @@
 package is.ru.hannes;
 
-public enum SelectionHeuristic {
-    UCB
+public enum SelectionHeuristic
+{
+    UCB,
+    BiasedUCB
 }
