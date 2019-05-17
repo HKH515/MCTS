@@ -215,6 +215,11 @@ public abstract class StateMachineGamer extends Gamer
                     moves.add(stateMachine.getMoveFromTerm(sentence));
                 }
 
+                if (stateMachine == null)
+                {
+                    System.out.println("WTF - state machine is null");
+                }
+
                 currentState = stateMachine.getNextState(currentState, moves);
                 getMatch().appendState(currentState.getContents());
             }

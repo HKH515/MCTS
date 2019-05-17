@@ -243,25 +243,32 @@ public class ApprenticePolicy
             expertProbabilities[idx++] = node.getActionProbability(legalMove, role);
         }
 
-        System.out.println("legalMoves size: " + legalMoves.size());
         double[] moveProbabilities = computeProbabilities(legalMoves, featureVectors);
 
         int numFeatures = weights.length;
 
         double[] updateValues = new double[numFeatures];
 
-        for (int i = 0; i < numFeatures; ++i)
+        for (int i = 0; i < legalMoves.size(); ++i)
         {
-            updateValues[i] += moveProbabilities[i] - expertProbabilities[i];
+            double[] sapFeatures = featureVectors.get(i);
+            double probabilityError = moveProbabilities[i] - expertProbabilities[i];
+
+            System.out.println("Feature vector size: " + sapFeatures.length);
+
+            for (int j = 0; j < numFeatures; ++j)
+            {
+                updateValues[j] += (probabilityError * sapFeatures[j]);
+            }
         }
 
         for (int i = 0; i < numFeatures; ++i)
         {
             updateValues[i] -= learningRate * lambda * weights[i];
             updateValues[i] *= learningRate;
-            System.out.println("updateValue[" + i + "]: " + updateValues[i]);
             weights[i] -= updateValues[i];
         }
+
         for (double i : weights){
             System.out.println(i);
         }

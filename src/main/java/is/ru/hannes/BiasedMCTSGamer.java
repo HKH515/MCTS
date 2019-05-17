@@ -37,7 +37,7 @@ public final class BiasedMCTSGamer extends StateMachineGamer
     {
         if (apprentice == null)
         {
-            apprentice = new ApprenticePolicy(getStateMachine(), 4, getMatch().getGame().getRules());
+            apprentice = new ApprenticePolicy(getStateMachine(), 3, getMatch().getGame().getRules());
         }
 
         long end = timeout - 50;
