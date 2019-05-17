@@ -135,9 +135,9 @@ public class MCTSNode
                         if (featureVector == null)
                         {
                             featureVector = apprentice.computeFeatureVector(getState(), move, role);
-                            featureVectors.add(featureVector);
                             roleMovePairToFeature.put(roleMovePair, featureVector);
                         }
+                        featureVectors.add(featureVector);
                     }
 
                     // then compute p with the feature vectors

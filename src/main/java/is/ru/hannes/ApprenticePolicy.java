@@ -21,6 +21,7 @@ import org.ggp.base.util.statemachine.implementation.prover.query.ProverQueryBui
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Random;
 
 public class ApprenticePolicy
 {
@@ -39,6 +40,13 @@ public class ApprenticePolicy
         lambda = 0.1;
         prover = new AimaProver(gameRules);
         weights = new double[numFeatures];
+        learningRate = 0.1;
+
+        Random rand = new Random();
+        for (int i = 0; i < numFeatures; i++)
+        {
+            weights[i] = -0.01  + (0.02*rand.nextDouble());
+        }
     }
 
     public void setLearningRate(double learningRate)
@@ -65,15 +73,14 @@ public class ApprenticePolicy
     private boolean breakthroughIsCellOwnedByRole(MachineState state, Gdl x, Gdl y, Role p)
     {
         GdlRelation rel = breakthroughIsCellOwnedByRoleRelation(x, y, p);
-        System.out.println(rel);
-        System.out.println("relation is " + prover.prove(rel, state.getContents()));
+        //System.out.println(rel);
         return prover.prove(rel, state.getContents());
     }
 
     private boolean breakthroughIsCellOnEdge(MachineState state, Gdl x, Gdl y, Role p)
     {
-        System.out.println("x: " + x);
-        System.out.println("y: " + y);
+        //System.out.println("x: " + x);
+        //System.out.println("y: " + y);
 
         if (p.toString().equals("white"))
         {
@@ -85,14 +92,27 @@ public class ApprenticePolicy
         }
     }
 
+    /*private char increaseChar(String chars)
+    {
+        char ch = chars.charAt(0);
+        ch++;
+        return ch;
+    }
+    private char decreaseChar(String chars)
+    {
+        char ch = chars.charAt(0);
+        ch--;
+        return (char)ch;
+    }*/
+
     private boolean areBottomDiagonalsP(MachineState state, Gdl x, Gdl y, Role p)
     {
         Gdl xMinus1 = GdlPool.getConstant(String.valueOf(Integer.parseInt(x.toString()) - 1));
         Gdl xPlus1 = GdlPool.getConstant(String.valueOf(Integer.parseInt(x.toString()) + 1));
         Gdl yPlus1 = GdlPool.getConstant(String.valueOf(Integer.parseInt(y.toString()) + 1));
-        System.out.println("x - 1: " + xMinus1);
-        System.out.println("x + 1: " + xPlus1);
-        System.out.println("y + 1: " + yPlus1);
+        //System.out.println("x - 1: " + xMinus1);
+        //System.out.println("x + 1: " + xPlus1);
+        //System.out.println("y + 1: " + yPlus1);
         return breakthroughIsCellOwnedByRole(state, xMinus1, yPlus1, p) || breakthroughIsCellOwnedByRole(state, xPlus1, yPlus1, p);
     }
 
@@ -101,9 +121,9 @@ public class ApprenticePolicy
         Gdl xMinus1 = GdlPool.getConstant(String.valueOf(Integer.parseInt(x.toString()) - 1));
         Gdl xPlus1 = GdlPool.getConstant(String.valueOf(Integer.parseInt(x.toString()) + 1));
         Gdl yMinus1 = GdlPool.getConstant(String.valueOf(Integer.parseInt(y.toString()) - 1));
-        System.out.println("x - 1: " + xMinus1);
-        System.out.println("x + 1: " + xPlus1);
-        System.out.println("y - 1: " + yMinus1);
+        //System.out.println("x - 1: " + xMinus1);
+        //System.out.println("x + 1: " + xPlus1);
+        //System.out.println("y - 1: " + yMinus1);
         return breakthroughIsCellOwnedByRole(state, xMinus1, yMinus1, p) || breakthroughIsCellOwnedByRole(state, xPlus1, yMinus1, p);
     }
 
@@ -128,8 +148,6 @@ public class ApprenticePolicy
         Move roleMove = move.get(machine.getRoleIndices().get(role));
         Gdl roleMoveContents = roleMove.getContents();
 
-        System.out.println("inside checkersFeatureVectorForStateActionPair");
-        System.out.println("roleMoveContents instanceof GdlFunction: " + (roleMoveContents instanceof  GdlFunction));
         if (roleMoveContents instanceof GdlFunction)
         {
             // Capturing
@@ -146,7 +164,6 @@ public class ApprenticePolicy
             // Is going to win
             if (rmcfName.toString().equals("move") && breakthroughIsCellOnEdge(state, destX, destY, role))
             {
-                System.out.println("feature for victory is set");
                 featureVector[1] = 1.0;
             }
 
@@ -226,6 +243,7 @@ public class ApprenticePolicy
             expertProbabilities[idx++] = node.getActionProbability(legalMove, role);
         }
 
+        System.out.println("legalMoves size: " + legalMoves.size());
         double[] moveProbabilities = computeProbabilities(legalMoves, featureVectors);
 
         int numFeatures = weights.length;
@@ -241,8 +259,13 @@ public class ApprenticePolicy
         {
             updateValues[i] -= learningRate * lambda * weights[i];
             updateValues[i] *= learningRate;
+            System.out.println("updateValue[" + i + "]: " + updateValues[i]);
             weights[i] -= updateValues[i];
         }
+        for (double i : weights){
+            System.out.println(i);
+        }
+        System.out.println("");
     }
 
 }
