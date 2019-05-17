@@ -87,7 +87,13 @@ public class MCTSNode
 
     private MCTSNode createChild(List<Move> jointMove) throws TransitionDefinitionException, MoveDefinitionException
     {
-        return new MCTSNode(machine, machine.getNextState(state, jointMove), this, jointMove, QMAST, useQMAST, apprentice);
+        MachineState nextState = machine.getNextState(state, jointMove);
+        if (nextState == null)
+        {
+            System.out.println("move: " + jointMove);
+            System.out.println("nextState: " + nextState);
+        }
+        return new MCTSNode(machine, nextState, this, jointMove, QMAST, useQMAST, apprentice);
     }
 
     List<Move> getPrevAction()

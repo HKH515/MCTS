@@ -124,6 +124,7 @@ public final class BiasedMCTSGamer extends StateMachineGamer
     {
         root = null;
         currentNode = null;
+        apprentice = null;
     }
 
     @Override
