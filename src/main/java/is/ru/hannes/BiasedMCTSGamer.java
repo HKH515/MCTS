@@ -19,7 +19,6 @@ import org.ggp.base.util.statemachine.Move;
 
 public final class BiasedMCTSGamer extends StateMachineGamer
 {
-
     private MCTSNode root;
     private MCTSNode currentNode;
     private double explorationFactor = 50;

@@ -60,7 +60,7 @@ public final class MCTS_QMASTGamer extends StateMachineGamer
         }
 
         {
-            root = new MCTSNode(getStateMachine(), getCurrentState(), null, null, QMAST, useQMAST);
+            root = new MCTSNode(getStateMachine(), getCurrentState(), null, null, QMAST, useQMAST, null);
             currentNode = root;
         }
 
