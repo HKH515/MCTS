@@ -157,14 +157,6 @@ public class ApprenticePolicy
             }
         }
 
-
-
-
-        System.out.println("feature vector:");
-        for (int i = 0; i < 4; i++)
-        {
-            System.out.println(featureVector[i]);
-        }
         return featureVector;
     }
 
