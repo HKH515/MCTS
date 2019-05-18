@@ -254,8 +254,6 @@ public class ApprenticePolicy
             double[] sapFeatures = featureVectors.get(i);
             double probabilityError = moveProbabilities[i] - expertProbabilities[i];
 
-            System.out.println("Feature vector size: " + sapFeatures.length);
-
             for (int j = 0; j < numFeatures; ++j)
             {
                 updateValues[j] += (probabilityError * sapFeatures[j]);
